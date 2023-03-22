@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Library - Search Results</title>
+        <link rel="stylesheet" href="/static/style.css"/>
+        <style>
+            .content {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 2mm;
+                flex-grow: 1;
+                position: relative;
+            }
+            .content>.warnings {
+                position: absolute;
+                top: 0; left: 0;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            .content>.warnings>.warning {
+                background-color: red;
+                padding: 1mm;
+                box-sizing: border-box;
+                margin: 1mm;
+                border-radius: 1mm;
+                width: 50%;
+                margin-left: auto;
+                margin-right: auto;
+                text-align: center;
+            }
+            .entry {
+                width: 4cm;
+                text-align: center;
+                text-decoration: none;
+            }
+            .entry>img {
+                height: 3cm;
+            }
+            .entry>.title {
+                text-align: center;
+                text-decoration: none;
+                color: var(--fg-primary);
+            }
+        </style>
+    </head>
+    <body class="standard-layout">
+        <div class="header">
+            Header Placeholder
+        </div>
+        <div class="sidebar">
+            {% include 'search_widget.html' %}
+        </div>
+        <div class="content">
+            {%for entry in entries%}
+                <a class="entry" href="/entry?id={{entry.id}}&q={{query}}">
+                    <img src="/api/entries/preview?id={{entry.id}}" />
+                    <div class="title">{{entry.item_name}}</div>
+                </a>
+            {%endfor%}
+        </div>
+        <div class="footer">
+            Search completed in {{search_time}}
+        </div>
+    </body>
+</html>

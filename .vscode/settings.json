@@ -1,0 +1,21 @@
+{
+    "cSpell.words": [
+        "CHECKTAGS",
+        "dateutil",
+        "dbapi",
+        "dtype",
+        "frombuffer",
+        "isin",
+        "jsonify",
+        "mktime",
+        "rowid",
+        "sessionmaker",
+        "setdiff",
+        "sqlalchemy",
+        "tobytes",
+        "yestermonth",
+        "yesterweek"
+    ],
+    "python.analysis.typeCheckingMode": "strict",
+    "python.linting.flake8Enabled": true
+}

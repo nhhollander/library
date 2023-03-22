@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Library - {{entry.item_name}}</title>
+        <link rel="stylesheet" href="/static/style.css"/>
+        <style>
+            .content {
+                display: flex;
+                flex-direction: column;
+                gap: 2mm;
+            }
+            .content>iframe {
+                height: 100%;
+                width: 100%;
+                border: none;
+            }
+        </style>
+    </head>
+    <body class="standard-layout">
+        <div class="header">
+            Header Placeholder
+        </div>
+        <div class="sidebar">
+            {% include 'search_widget.html' %}
+            <table>
+                <tr>
+                    <td>Title</td>
+                    <td>{{entry.item_name}}</td>
+                </tr>
+                <tr>
+                    <td>Created</td>
+                    <td>{{entry.date_created}}</td>
+                </tr>
+                <tr>
+                    <td>Digitized</td>
+                    <td>{{entry.date_digitized}}</td>
+                </tr>
+                <tr>
+                    <td>Modified</td>
+                    <td>{{entry.date_modified}}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="content">
+            <iframe src="/api/entries/download?id={{entry.id}}"></iframe>
+        </div>
+        <div class="footer">
+            Footer Placeholder
+        </div>
+    </body>
+</html>

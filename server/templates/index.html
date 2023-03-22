@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello World!</title>
+        <link rel="stylesheet" href="/static/style.css">
+        <style>
+            /* TODO: Use CSS nesting once supported by Firefox */
+            html {
+                background-image: url('/static/library.blur.jpg');
+                background-size: cover;
+                background-position: center;
+                min-height: 100vh;
+
+                --color-bg: white;
+            }
+            .search {
+                position: fixed;
+                left: 50vw; top: 50vh;
+                transform: translate(-50%, -50%);
+                border: 1px solid black;
+                border-radius: 1mm;
+
+                box-shadow: 1mm 1mm 1mm rgba(0, 0, 0, .25);
+
+                display: flex;
+                flex-direction: column;
+                gap: 3mm;
+                padding: 3mm;
+                background-color: var(--color-bg);
+            }
+            .search>.logo {
+                font-size: 200%;
+                font-weight: bold;
+                text-align: center;
+            }
+            .search>input {
+                width: 10cm;
+                box-sizing: border-box;
+            }
+            .footer {
+                position: fixed;
+                left: 0; bottom: 0;
+                width: 100vw;
+                box-sizing: border-box;
+                padding: 4mm;
+
+                border-top: 1px solid blue;
+                background-color: var(--color-bg);
+            }
+        </style>
+    </head>
+    <body>
+        <form class="search" action="search" rel="search">
+            <div class="logo">Library</div>
+            <input name="q">
+            <input type="submit" value="Search"> 
+        </form>
+        <div class="footer">
+            TODO: Put some useful information here I guess
+        </div>
+    </body>
+</html>

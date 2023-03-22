@@ -1,0 +1,25 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema",
+    "title": "Library Configuration Schema",
+    "type": "object",
+    "properties": {
+        "dataRoot": {
+            "description": "Absolute path to the root of the data storage directory",
+            "type": "string"
+        },
+        "search": {
+            "description": "Properties which describe search options",
+            "type": "object",
+            "properties": {
+                "defaultCount": {
+                    "description": "Default number of results to return per page",
+                    "type": "number"
+                },
+                "maxCount": {
+                    "description": "Maximum number of results to return per page",
+                    "type": "number"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "$schema": "./config.schema.json",
+    "dataRoot": "/archive/LIBRARY/data",
+    "search": {
+        "defaultCount": 50,
+        "maxCount": 100
+    }
+}
