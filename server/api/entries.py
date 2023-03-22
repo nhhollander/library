@@ -1,15 +1,16 @@
-from flask import Blueprint, Response, stream_with_context, send_file
+from flask import Blueprint, send_file  # type: ignore (PyLance mis-detected type of `path_or_file`)
 from typing_extensions import TypedDict
 from database.entry import EntryUpdateParams
+from database.exceptions import DatabaseException
 
-from server.helpers import RequestError, exceptionWrapper, success, args, validate_tags
-import server
-import xdg.BaseDirectory  # type: ignore
+from server.helpers import RequestError, exceptionWrapper, success, args, withDatabase
+import xdg.BaseDirectory  # type: ignore (Missing stub file)
 from pathlib import Path
 import hashlib
 import os
 import config
 import magic
+from database import Database
 
 entry_api = Blueprint('entry_api', __name__, url_prefix='/entries')
 mime = magic.Magic(mime=True)
@@ -22,12 +23,13 @@ GetEntryArgs = TypedDict('GetEntryArgs', {
 @entry_api.route('/get')
 @exceptionWrapper
 @args(GetEntryArgs)
-def getEntry(args: GetEntryArgs):
+@withDatabase
+def getEntry(db: Database, args: GetEntryArgs):
     try:
         id = int(args['id'])
     except ValueError:
         raise RequestError(f"Invalid ID {args['id']}: Not a number")
-    entry = server.db.get_entry_by_id(id)
+    entry = db.get_entry_by_id(id)
     if entry:
         return success(entry.object())
     else:
@@ -37,13 +39,15 @@ def getEntry(args: GetEntryArgs):
 @entry_api.route("/create", methods=["POST"])
 @exceptionWrapper
 @args(EntryUpdateParams, 'POST')
-def createEntry(args: EntryUpdateParams):
-    # Validate input
-    if 'tags' in args:
-        validate_tags(args['tags'])
+@withDatabase
+def createEntry(db: Database, args: EntryUpdateParams):
     # Construct new object
-    entry = server.db.create_entry()
-    entry.update_safe(args)
+    entry = db.create_entry()
+    try:
+        entry.update_safe(args)
+    except DatabaseException as e:
+        db.destroy_entry(entry)
+        raise RequestError({'message': e.message})
     return success({"entry_id": entry.id})
 
 
@@ -54,8 +58,9 @@ class UpdateEntryArgs(EntryUpdateParams):
 @entry_api.route("/update", methods=["POST"])
 @exceptionWrapper
 @args(UpdateEntryArgs, 'POST')
-def updateEntry(args: UpdateEntryArgs):
-    entry = server.db.get_entry_by_id(args['id'])
+@withDatabase
+def updateEntry(db: Database, args: UpdateEntryArgs):
+    entry = db.get_entry_by_id(args['id'])
     if not entry:
         raise RequestError(f"No such entry {id}", 404)
     # Update modified fields
@@ -65,7 +70,8 @@ def updateEntry(args: UpdateEntryArgs):
 @entry_api.route('/preview')
 @exceptionWrapper
 @args(GetEntryArgs)
-def getPreview(args: GetEntryArgs):
+@withDatabase
+def getPreview(db: Database, args: GetEntryArgs):
     """
     Attempt to return a preview image for this entry in accordance with the XDG thumbnail
     specification. https://specifications.freedesktop.org/thumbnail-spec/thumbnail-spec-latest.html
@@ -75,7 +81,7 @@ def getPreview(args: GetEntryArgs):
         id = int(args['id'])
     except ValueError:
         raise RequestError("Invalid ID")
-    entry = server.db.get_entry_by_id(id)
+    entry = db.get_entry_by_id(id)
     if not entry:
         raise RequestError(f"No such entry {id}", 404)
     if not entry.storage_id:
@@ -90,10 +96,6 @@ def getPreview(args: GetEntryArgs):
         thumb_path = Path(thumb_cache, thumb_size, id)
         if os.path.exists(thumb_path):
             return send_file(thumb_path)
-            # with thumb_path.open("rb") as thumb:
-            #     response = Response(thumb.read())
-            #     response.headers['Content-Type'] = 'image/png'
-            #     return response
     # TODO: Request thumbnails from Tumbler (via D-Bus)
     # TODO: Show a default image instead of returning json error
     raise RequestError(f"No preview available for entity {id}", 404)
@@ -102,13 +104,14 @@ def getPreview(args: GetEntryArgs):
 @entry_api.route('/download')
 @exceptionWrapper
 @args(GetEntryArgs)
-def download(args: GetEntryArgs):
+@withDatabase
+def download(db: Database, args: GetEntryArgs):
     # Validate input and entry
     try:
         id = int(args['id'])
     except ValueError:
         raise RequestError("Invalid ID")
-    entry = server.db.get_entry_by_id(id)
+    entry = db.get_entry_by_id(id)
     if not entry:
         raise RequestError(f"No such entry {id}", 404)
     if not entry.storage_id:

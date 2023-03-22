@@ -22,6 +22,7 @@ def __check_tags(_tags: bytes, _required: bytes, _forbidden: bytes):
     :param _forbidden: Array of tags which must not be present in `_tags`
     :returns: True if all conditions are met
     """
+    # Prevent a potential runtime exception caused by accidental null fields in the database
     if _tags is None:
         _tags = b''
     tags = np.frombuffer(_tags, dtype=np.uint16)

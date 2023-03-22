@@ -1,14 +1,15 @@
 from flask import Blueprint
 from database.types import EntryUpdateParams
-import server
-from server.helpers import exceptionWrapper
+from server.helpers import exceptionWrapper, withDatabase
+from database import Database
 
 debug_api = Blueprint("debug_api", __name__, url_prefix="/debug")
 
 
 @debug_api.route("/createEntries")
 @exceptionWrapper
-def createEntries():
+@withDatabase
+def createEntries(db: Database):
     tags: list[str] = [
         'Tag1', 'Tag2', 'Tag3', 'Tag4'
     ]
@@ -48,8 +49,8 @@ def createEntries():
     ]
 
     for tag in tags:
-        server.db.create_tag(tag)
+        db.create_tag(tag)
     for definition in test_definitions:
-        e = server.db.create_entry()
+        e = db.create_entry()
         e.update_safe(definition)
     return "Success"

@@ -47,7 +47,8 @@ class Entry(Base):
         default('date_modified', time.time())
         super().__init__(**kw)
 
-    def __get_session(self):
+    @property
+    def __session(self):
         """
         Get the session associated with this object. Will raise an exception if this entry is not
         associated with any database, for example in the time between creating this entry and
@@ -72,8 +73,7 @@ class Entry(Base):
         return np.frombuffer(self.tags_raw, np.uint16).tolist()
 
     def get_tags(self) -> list[str]:
-        session = self.__get_session()
-        tags = session.query(Tag).filter(Tag.id.in_(self.get_tag_ids())).all()
+        tags = self.__session.query(Tag).filter(Tag.id.in_(self.get_tag_ids())).all()
         return [tag.name for tag in tags]
 
     def set_tags(self, tags: list[str] | list[int], commit: bool = True):
@@ -85,13 +85,13 @@ class Entry(Base):
         """
         tag_ids: list[int]
         if isinstance(tags[0], str):
-            session = self.__get_session()
+            session = self.__session
             tag_ids = get_tag_ids(session, cast(list[str], tags))
         else:
             tag_ids = cast(list[int], tags)
         self.tags_raw = encode_tags(tag_ids)
         if commit:
-            self.__get_session().commit()
+            self.__session.commit()
 
     def add_tag(self, tag: str | int, commit: bool = True):
         """
@@ -100,7 +100,7 @@ class Entry(Base):
         :param tag: Tag name or ID to assign to this entry.
         :param commit: Set to False to prevent the change from being automatically persisted
         """
-        tag_id = get_tag_id(self.__get_session(), tag) if isinstance(tag, str) else tag
+        tag_id = get_tag_id(self.__session, tag) if isinstance(tag, str) else tag
         self.set_tags(self.get_tag_ids() + [tag_id], commit)
 
     def remove_tag(self, tag: str | int, commit: bool = True):
@@ -110,20 +110,21 @@ class Entry(Base):
         :param tag: The name or ID of the tag to remove from this entry.
         :param commit: Set to False to prevent the change from being automatically persisted
         """
-        tag_id = get_tag_id(self.__get_session(), tag) if isinstance(tag, str) else tag
+        tag_id = get_tag_id(self.__session, tag) if isinstance(tag, str) else tag
         tags = set(self.get_tag_ids())
         tags.remove(tag_id)
         self.set_tags(list(tags), commit)
 
     def update_safe(self, params: EntryUpdateParams):
         """
-        Validate and update options. If any of the given parameters are invalid, this option will
+        Validate and update options. If any of the given parameters are invalid, this method will
         fail without making any changes to the entry.
         """
         # Validate inputs
         tag_ids: list[int] = []
         if 'tags' in params:
-            tag_ids = get_tag_ids(self.__get_session(), params['tags'])
+            tag_ids = get_tag_ids(self.__session, params['tags'])
+
         # Apply updates that require translation
         if 'tags' in params:
             self.set_tags(tag_ids)
@@ -131,10 +132,10 @@ class Entry(Base):
         for field in self.__raw_update_fields:
             if field in params:
                 setattr(self, field, params[field])
+
         # Commit!
         self.date_modified = int(time.time())
-        self.__get_session().commit()
-        print("Updated entity to ", self)
+        self.__session.commit()
 
     def __repr__(self):
         return "Entry(" \

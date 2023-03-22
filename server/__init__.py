@@ -5,7 +5,15 @@ from .api import api
 from .site import site
 
 app = Flask(__name__)
-db = Database("/local.db")
+__db = Database("/local.db")
 
 app.register_blueprint(api)
 app.register_blueprint(site)
+
+
+def get_db_internal():
+    """
+    Retrieve a handle to the database object. Normally you should obtain a handle to this object
+    by decorating your function with the `withDatabase` decorator defined in helpers.py.
+    """
+    return __db

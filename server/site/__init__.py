@@ -1,10 +1,9 @@
 from flask import Blueprint, render_template
 from database.exceptions import InvalidTagException
-import server
-from server.helpers import RequestError, exceptionWrapper, args
+from server.helpers import RequestError, exceptionWrapper, args, withDatabase
 from typing_extensions import TypedDict, NotRequired
 from typing import Any
-from database import searchStringParser
+from database import searchStringParser, Database
 import time
 
 site = Blueprint('site', __name__)
@@ -23,7 +22,8 @@ class SearchArgs(TypedDict):
 @site.route("/search")
 @exceptionWrapper
 @args(SearchArgs)
-def search(args: SearchArgs):
+@withDatabase
+def search(db: Database, args: SearchArgs):
     render_params: dict[str, Any] = {
         "query": args['q'],
         "entries": [],
@@ -36,7 +36,7 @@ def search(args: SearchArgs):
         query = args['q']
         if 'page' in args:
             query += f" page:{args['page']}"
-        render_params['entries'] = server.db.search(searchStringParser.parse_search(query))
+        render_params['entries'] = db.search(searchStringParser.parse_search(query))
     except InvalidTagException as e:
         if len(e.tags) > 1:
             warn = f"Your query contains invalid tags: [{', '.join(e.tags)}]"
@@ -56,7 +56,8 @@ class EntryArgs(TypedDict):
 @site.route("/entry")
 @exceptionWrapper
 @args(EntryArgs)
-def entry(args: EntryArgs):
+@withDatabase
+def entry(db: Database, args: EntryArgs):
     render_params: dict[str, Any] = {
         "query": args.get('q'),
         "entry": None
@@ -66,7 +67,7 @@ def entry(args: EntryArgs):
         id = int(args['id'])
     except ValueError:
         raise RequestError("Invalid ID")
-    render_params['entry'] = server.db.get_entry_by_id(id)
+    render_params['entry'] = db.get_entry_by_id(id)
     if not render_params['entry']:
         raise RequestError(f"No such entry {id}", 404)
     if not render_params['entry'].storage_id:

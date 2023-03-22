@@ -1,7 +1,11 @@
-from typing import List
+class DatabaseException(Exception):
+    """
+    Base exception from which all other database specific exceptions should inherit.
+    """
+    message: str
 
 
-class TagExistsException(Exception):
+class TagExistsException(DatabaseException):
 
     def __init__(self, tag: str):
         self.message = f"Tag {tag} already exists"
@@ -9,7 +13,7 @@ class TagExistsException(Exception):
         self.args = (self.message, tag)
 
 
-class TagDoesNotExistException(Exception):
+class TagDoesNotExistException(DatabaseException):
 
     def __init__(self, tag: str):
         self.message = f"Tag {tag} does not exist"
@@ -17,9 +21,9 @@ class TagDoesNotExistException(Exception):
         self.args = (self.message, tag)
 
 
-class InvalidTagException(Exception):
+class InvalidTagException(DatabaseException):
 
-    def __init__(self, tags: List[str]):
+    def __init__(self, tags: list[str]):
         self.message = f"Invalid tag{'s' if len(tags) > 0 else ''}: {tags}"
         self.tags = tags
         self.args = (self.message, tags)

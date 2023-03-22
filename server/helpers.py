@@ -1,30 +1,40 @@
-from typing import Type, Literal, Callable, TypeVar, Any, cast
+from typing import Type, Literal, Callable, TypeVar, cast, ParamSpec, Concatenate
 from functools import wraps
 from flask import jsonify, request, Response
 from util.validator import ValidationException, Validator
-from util.plural import plural
 import dateutil.parser
 import json
 import traceback
 from typing_extensions import TypedDict
+from database import Database
 import server
 
-GenericDict = TypeVar('GenericDict', bound=TypedDict)
 validator = Validator(raise_exception=True)
+
+
+# ========== #
+# Decorators #
+# ========== #
+
+P = ParamSpec('P')
+R = TypeVar('R')
+GenericDict = TypeVar('GenericDict', bound=TypedDict)
+
 
 def args(argType: Type[GenericDict], method: Literal['GET', 'POST'] = 'GET'):
     """
     Decorator generator for retrieving and validating request arguments. When the `method` is set to
     `GET` arguments will be retrieved from `request.args`. When the `method` is set to `POST`
-    arguments will be read from 
+    arguments will be read from the request body and parsed as json. TODO: Support for native
+    encoding types as well
 
     :param argType: TypedDict defining required and optional request values.
     :param method: Which arg source to retrieve from.
     :returns: A decorator which provides a valid argument object to the decorated function.
     """
-    def decorator(function: Callable[[GenericDict], Any]):
+    def decorator(function: Callable[Concatenate[GenericDict, P], R]) -> Callable[P, R]:
         @wraps(function)
-        def wrapper():
+        def wrapper(*args: P.args, **kwargs: P.kwargs):
             # Get data depending on source
             if method == 'GET':
                 data = request.args
@@ -38,11 +48,12 @@ def args(argType: Type[GenericDict], method: Literal['GET', 'POST'] = 'GET'):
                     "message": "Invalid Request",
                     "detail": e.message
                 })
-            return function(arguments)
+            return function(arguments, *args, **kwargs)
         return wrapper
     return decorator
 
-def exceptionWrapper(function: Callable[..., Any]):
+
+def exceptionWrapper(function: Callable[P, R]) -> Callable[P, R | tuple[Response, int]]:
     """
     Wrapper that catches request errors and unhandled exceptions and converts them into an
     appropriate response object.
@@ -54,9 +65,9 @@ def exceptionWrapper(function: Callable[..., Any]):
     :returns: A wrapper that handles exceptions.
     """
     @wraps(function)
-    def wrapper():
+    def wrapper(*args: P.args, **kwargs: P.kwargs):
         try:
-            return function()
+            return function(*args, **kwargs)
         except RequestError as e:
             return jsonify({
                 "result": "error",
@@ -71,6 +82,25 @@ def exceptionWrapper(function: Callable[..., Any]):
 
     return wrapper
 
+
+def withDatabase(function: Callable[Concatenate[Database, P], R]) -> Callable[P, R]:
+    """
+    Provides database access to a handler, ensuring that resources allocated to handle this
+    transaction are released as soon as the handler completes.
+    """
+    @wraps(function)
+    def wrapper(*args: P.args, **kwargs: P.kwargs):
+        db = server.get_db_internal()
+        res = function(db, *args, **kwargs)
+        db.release()
+        return res
+    return wrapper
+
+
+# ===== #
+# Types #
+# ===== #
+
 class RequestError(Exception):
     """
     A RequestError represents a fatal error caused either by bad user input (4xx) or an internal
@@ -81,6 +111,11 @@ class RequestError(Exception):
         self.detail = detail
         self.code = code
         self.args = (detail, code)
+
+
+# ================ #
+# Helper Functions #
+# ================ #
 
 def success(data: object) -> tuple[Response, int]:
     """
@@ -94,7 +129,8 @@ def success(data: object) -> tuple[Response, int]:
         "detail": data
     }), 200
 
-def parse_date(date: str|None, key: str):
+
+def parse_date(date: str | None, key: str):
     """
     Attempt to parse a date. If the given input is `None` or an empty screen, this function will
     return `None`.
@@ -110,18 +146,4 @@ def parse_date(date: str|None, key: str):
     except dateutil.parser.ParserError as e:
         raise RequestError({
             "message": f"Invalid date for key '{key}': {str(e)}"
-        })
-
-def validate_tags(tags: list[str]):
-    """
-    Attempt to validate the given tags. Raises a `RequestError` if the validation fails.
-
-    :param db: Database instance to query for tag validity
-    :param tags: List of tags to validate
-    """
-    invalid = server.db.check_tags(tags)
-    if len(invalid) > 0:
-        raise RequestError({
-            "message": f"Invalid tag{plural(invalid)}",
-            "invalid_tags": invalid
         })
