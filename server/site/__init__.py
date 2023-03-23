@@ -4,8 +4,8 @@ from database.exceptions import InvalidTagException, DatabaseException
 from server.helpers import exceptionWrapper, args, templateWrapper, withDatabase
 from server.helpers import StandardRenderParams, Warning, Err
 from typing_extensions import TypedDict, NotRequired
-from typing import Any
 from database import searchStringParser, Database
+from util import mime
 
 site = Blueprint('site', __name__)
 
@@ -69,10 +69,12 @@ class EntryArgs(TypedDict):
 def entry(db: Database, args: EntryArgs):
     class Params(StandardRenderParams):
         entry: Entry | None
+        native: bool
     render_params: Params = {
         'query': args.get('q') or '',
         'messages': [],
-        'entry': None
+        'entry': None,
+        'native': False
     }
 
     try:
@@ -88,5 +90,10 @@ def entry(db: Database, args: EntryArgs):
     if not render_params['entry'].storage_id:
         render_params['messages'].append(Err(f"Entry {id} has no associated media"))
         return 'entry.html', render_params
+    render_params['native'] = mime.is_browser_compatible(render_params['entry'].mime_type or '')
+    if not render_params['native']:
+        render_params['messages'].append(
+            Err(f"Entry {id} (type {render_params['entry'].mime_type}) can not be displayed "
+                "in-browser"))
 
     return 'entry.html', render_params

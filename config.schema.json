@@ -20,6 +20,19 @@
                     "type": "number"
                 }
             }
+        },
+        "site": {
+            "description": "Properties responsible for operation of the website",
+            "type": "object",
+            "properties": {
+                "nativeMimeTypes": {
+                    "description": "List of mime types which can be displayed natively in the browser.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
         }
     }
 }

@@ -4,5 +4,14 @@
     "search": {
         "defaultCount": 50,
         "maxCount": 100
+    },
+    "site": {
+        "nativeMimeTypes": [
+            "audio/.*",
+            "image/.*",
+            "video/.*",
+            "text/.*",
+            "application/pdf"
+        ]
     }
 }

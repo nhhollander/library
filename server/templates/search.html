@@ -4,7 +4,7 @@
         <title>Library - Search Results</title>
         <link rel="stylesheet" href="/static/style.css"/>
         <style>
-            .content {
+            .entries {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 2mm;
@@ -22,19 +22,26 @@
                 background-color: var(--bg-secondary);
             }
             .entry>.preview {
-                width: 3cm;
-                height: 3cm;
+                width: 4cm;
+                height: 4cm;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                position: relative;
             }
-            .entry>.preview>img {
+            .entry>.preview>.thumb {
                 max-width: 100%;
                 max-height: 100%;
                 border-radius: 1mm;
             }
+            .entry>.preview>.mime {
+                position: absolute;
+                right: 1mm; bottom: 1mm;
+                width: 20%;
+                height: 20%;
+            }
             .entry>.title {
-                width: 3cm;
+                width: 100%;
                 text-align: center;
                 text-decoration: none;
                 color: var(--fg-primary);
@@ -51,14 +58,17 @@
         </div>
         <div class="content">
             {% include 'widgets/messages.html' %}
-            {%for entry in entries%}
-                <a class="entry" href="/entry?id={{entry.id}}&q={{query}}">
-                    <div class="preview">
-                        <img src="/api/entries/preview?id={{entry.id}}" />
-                    </div>
-                    <div class="title">{{entry.item_name}}</div>
-                </a>
-            {% endfor %}
+            <div class="entries">
+                {%for entry in entries%}
+                    <a class="entry" href="/entry?id={{entry.id}}&q={{query}}">
+                        <div class="preview">
+                            <img class="thumb" src="/api/entries/preview?id={{entry.id}}" />
+                            <img class="mime" src="/api/entries/mimeIcon?mime={{entry.mime_icon}}" />
+                        </div>
+                        <div class="title">{{entry.item_name}}</div>
+                    </a>
+                {% endfor %}
+            </div>
         </div>
         <div class="footer">
             {% include 'widgets/footer.html' %}

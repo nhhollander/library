@@ -9,11 +9,10 @@ from pathlib import Path
 import hashlib
 import os
 import config
-import magic
 from database import Database
+from util import mime as mime_util
 
 entry_api = Blueprint('entry_api', __name__, url_prefix='/entries')
-mime = magic.Magic(mime=True)
 
 GetEntryArgs = TypedDict('GetEntryArgs', {
     'id': str  # GET arguments can only be strings
@@ -86,19 +85,48 @@ def getPreview(db: Database, args: GetEntryArgs):
         raise RequestError(f"No such entry {id}", 404)
     if not entry.storage_id:
         raise RequestError("Entry has no associated media", 404)
+
     # Get the thumbnail ID
-    uri = Path(config.configuration['dataRoot'], entry.storage_id).as_uri()
-    id = hashlib.md5(uri.encode()).hexdigest() + ".png"
-    # Search for the thumbnail in the cache
+    file_path = Path(config.configuration['dataRoot'], entry.storage_id)
+    thumb_id = hashlib.md5(file_path.as_uri().encode()).hexdigest() + ".png"
+
+    # Attempt to find an existing preview image
     thumb_cache = Path(xdg.BaseDirectory.xdg_cache_home, "thumbnails")
     thumbnail_sizes = ['xx-large', 'x-large', 'large', 'normal']
     for thumb_size in thumbnail_sizes:
-        thumb_path = Path(thumb_cache, thumb_size, id)
+        thumb_path = Path(thumb_cache, thumb_size, thumb_id)
         if os.path.exists(thumb_path):
             return send_file(thumb_path)
+
     # TODO: Request thumbnails from Tumbler (via D-Bus)
-    # TODO: Show a default image instead of returning json error
+
+    # Attempt to find a mime type icon
+    icon = mime_util.find_icon_path(entry.mime_icon or '')
+    if icon:
+        return send_file(icon)
+
     raise RequestError(f"No preview available for entity {id}", 404)
+
+
+class MimeIconArgs(TypedDict):
+    mime: str
+
+
+@entry_api.route('/mimeIcon')
+@exceptionWrapper
+@args(MimeIconArgs)
+def getMimeIcon(args: MimeIconArgs):
+    """
+    Attempt to return an icon for the mime type of this object in accordance with the XDG icon
+    specification.
+    https://specifications.freedesktop.org/icon-theme-spec/icon-theme-spec-latest.html
+    """
+
+    icon = mime_util.find_icon_path(args['mime'])
+    if icon:
+        return send_file(icon)
+
+    raise RequestError(f"Icon {args['mime']} unknown", 404)
 
 
 @entry_api.route('/download')

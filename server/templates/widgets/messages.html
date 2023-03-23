@@ -1,5 +1,7 @@
-<div class="messages">
-    {% for message in messages %}
-        <div class="message {{message.class_}}">{{message.message}}</div>
-    {% endfor %}
-</div>
+{% if messages | length > 0 %}
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {{message.class_}}">{{message.message}}</div>
+        {% endfor %}
+    </div>
+{% endif %}

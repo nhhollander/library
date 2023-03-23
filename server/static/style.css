@@ -47,6 +47,9 @@ html {
 }
 .standard-layout>.content {
     grid-area: main;
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
 }
 .standard-layout>.footer {
     grid-area: footer;
@@ -74,8 +77,6 @@ form.search-widget>input:last-child {
 }
 
 div.messages {
-    position: absolute;
-    top: 0; left: 0;
     width: 100%;
     display: flex;
     flex-direction: column;
