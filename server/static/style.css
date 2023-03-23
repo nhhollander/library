@@ -73,3 +73,31 @@ form.search-widget>input:last-child {
     border-radius: 0 0 1mm 1mm;
 }
 
+div.messages {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+div.messages>div.message {
+    background-color: var(--bg-secondary);
+    box-shadow: 0.5mm 0.5mm 0.5mm var(--shadow-primary), 0 0 0 1px rgb(0, 0, 0, .25) inset;
+    padding: 1mm;
+    box-sizing: border-box;
+    margin: 1mm;
+    border-radius: 1mm;
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+div.messages>div.message.warning {
+    background-color: #ffff5f;
+}
+div.messages>div.message.error {
+    background-color: #ff6d6d;
+}
+div.messages>div.message.success {
+    background-color: #00b900;
+}

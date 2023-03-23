@@ -1,6 +1,8 @@
 from flask import Blueprint
+from database.entry import Entry
 from database.exceptions import InvalidTagException, DatabaseException
-from server.helpers import RequestError, exceptionWrapper, args, templateWrapper, withDatabase
+from server.helpers import exceptionWrapper, args, templateWrapper, withDatabase
+from server.helpers import StandardRenderParams, Warning, Err
 from typing_extensions import TypedDict, NotRequired
 from typing import Any
 from database import searchStringParser, Database
@@ -26,11 +28,12 @@ class SearchArgs(TypedDict):
 @withDatabase
 @templateWrapper
 def search(db: Database, args: SearchArgs):
-    render_params: dict[str, Any] = {
-        "query": args['q'],
-        "entries": [],
-        "warnings": [],
-        "search_time": 0
+    class Params(StandardRenderParams):
+        entries: list[Entry]
+    render_params: Params = {
+        'query': args['q'],
+        'messages': [],
+        'entries': []
     }
 
     try:
@@ -38,16 +41,17 @@ def search(db: Database, args: SearchArgs):
         if 'page' in args:
             query += f" page:{args['page']}"
         params, warnings = searchStringParser.parse_search(query)
-        render_params['warnings'].extend(warnings)
+        render_params['messages'].extend(Warning(w) for w in warnings)
         render_params['entries'] = db.search(params)
     except InvalidTagException as e:
         if len(e.tags) > 1:
-            warn = f"Query contains invalid tags: {', '.join(e.tags)}"
+            message = f"Query contains invalid tags: {', '.join(e.tags)}"
         else:
-            warn = f"Query contains an invalid tag: {e.tags[0]}"
-        render_params['warnings'].append(warn)
+            message = f"Query contains an invalid tag: {e.tags[0]}"
+        render_params['messages'].append(Err(message))
     except DatabaseException as e:
-        render_params['warnings'].append(f"Uncaught database exception {type(e).__name__}")
+        message = f"Uncaught database exception {type(e).__name__}"
+        render_params['messages'].append(Err(message))
 
     return 'search.html', render_params
 
@@ -63,20 +67,26 @@ class EntryArgs(TypedDict):
 @withDatabase
 @templateWrapper
 def entry(db: Database, args: EntryArgs):
-    render_params: dict[str, Any] = {
-        "query": args.get('q'),
-        "entry": None
+    class Params(StandardRenderParams):
+        entry: Entry | None
+    render_params: Params = {
+        'query': args.get('q') or '',
+        'messages': [],
+        'entry': None
     }
 
     try:
         id = int(args['id'])
-    except ValueError:
-        raise RequestError("Invalid ID")
+    except Exception as e:
+        render_params['messages'].append(Err(f"Invalid Entry ID: {e.args[0]}"))
+        return 'entry.html', render_params, 400
 
     render_params['entry'] = db.get_entry_by_id(id)
     if not render_params['entry']:
-        raise RequestError(f"No such entry {id}", 404)
+        render_params['messages'].append(Err(f"Entry {id} not found"))
+        return 'entry.html', render_params, 404
     if not render_params['entry'].storage_id:
-        raise RequestError("Entry has no associated media", 404)
+        render_params['messages'].append(Err(f"Entry {id} has no associated media"))
+        return 'entry.html', render_params
 
     return 'entry.html', render_params

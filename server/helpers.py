@@ -98,8 +98,8 @@ def withDatabase(function: Callable[Concatenate[Database, P], R]) -> Callable[P,
     return wrapper
 
 
-FullTuple = tuple[str, dict[str, Any], int]
-PartialTuple = tuple[str, dict[str, Any]]
+FullTuple = tuple[str, dict[str, Any] | TypedDict, int]
+PartialTuple = tuple[str, dict[str, Any] | TypedDict]
 TemplateFunc = Callable[P, PartialTuple | FullTuple]
 
 
@@ -118,6 +118,7 @@ def templateWrapper(function: TemplateFunc[P]) -> Callable[P, Response]:
     def wrapper(*args: P.args, **kwargs: P.kwargs):
         timer = Timer()
         template_name, params, status = expand(function(*args, **kwargs))
+        params = cast(dict[str, Any], params)  # Strip away any special typing information
         params['query_time'] = timer.time_formatted()
         resp = Response(render_template(template_name, **params))
         resp.status_code = status
@@ -139,6 +140,28 @@ class RequestError(Exception):
         self.detail = detail
         self.code = code
         self.args = (detail, code)
+
+
+class Message:
+    class_: str
+    message: str
+
+    def __init__(self, class_: str, message: str):
+        self.class_ = class_
+        self.message = message
+
+
+Err: Callable[[str], Message] = lambda message: Message('error', message)
+Warning: Callable[[str], Message] = lambda message: Message('warning', message)
+Success: Callable[[str], Message] = lambda message: Message('success', message)
+
+
+class StandardRenderParams(TypedDict):
+    """
+    A set of parameters found on most pages.
+    """
+    query: str
+    messages: list[Message]
 
 
 # ================ #

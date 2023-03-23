@@ -12,26 +12,6 @@
                 position: relative;
                 align-items: flex-start;
             }
-            .content>.warnings {
-                position: absolute;
-                top: 0; left: 0;
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-            }
-            .content>.warnings>.warning {
-                background-color: #ff5050;
-                border: 1px solid #a33232;
-                box-shadow: 0.5mm 0.5mm 0.5mm var(--shadow-primary);
-                padding: 1mm;
-                box-sizing: border-box;
-                margin: 1mm;
-                border-radius: 1mm;
-                width: 50%;
-                margin-left: auto;
-                margin-right: auto;
-                text-align: center;
-            }
             .entry {
                 text-align: center;
                 text-decoration: none;
@@ -70,13 +50,7 @@
             {% include 'widgets/search.html' %}
         </div>
         <div class="content">
-            {% if warnings | length > 0 %}
-                <div class="warnings">
-                    {% for warning in warnings %}
-                        <div class="warning">{{warning}}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+            {% include 'widgets/messages.html' %}
             {%for entry in entries%}
                 <a class="entry" href="/entry?id={{entry.id}}&q={{query}}">
                     <div class="preview">

@@ -1,0 +1,5 @@
+<div class="messages">
+    {% for message in messages %}
+        <div class="message {{message.class_}}">{{message.message}}</div>
+    {% endfor %}
+</div>
