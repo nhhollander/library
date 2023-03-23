@@ -18,10 +18,10 @@
     </head>
     <body class="standard-layout">
         <div class="header">
-            Header Placeholder
+            {% include 'widgets/header.html' %}
         </div>
         <div class="sidebar">
-            {% include 'search_widget.html' %}
+            {% include 'widgets/search.html' %}
             <table>
                 <tr>
                     <td>Title</td>
@@ -45,7 +45,7 @@
             <iframe src="/api/entries/download?id={{entry.id}}"></iframe>
         </div>
         <div class="footer">
-            Footer Placeholder
+            {% include 'widgets/footer.html' %}
         </div>
     </body>
 </html>

@@ -1,6 +1,7 @@
-from typing import Type, Literal, Callable, TypeVar, cast, ParamSpec, Concatenate
+from typing import Type, Literal, Callable, TypeVar, cast, ParamSpec, Concatenate, Any
 from functools import wraps
-from flask import jsonify, request, Response
+from flask import jsonify, request, Response, render_template
+from util.timer import Timer
 from util.validator import ValidationException, Validator
 import dateutil.parser
 import json
@@ -94,6 +95,33 @@ def withDatabase(function: Callable[Concatenate[Database, P], R]) -> Callable[P,
         res = function(db, *args, **kwargs)
         db.release()
         return res
+    return wrapper
+
+
+FullTuple = tuple[str, dict[str, Any], int]
+PartialTuple = tuple[str, dict[str, Any]]
+TemplateFunc = Callable[P, PartialTuple | FullTuple]
+
+
+def templateWrapper(function: TemplateFunc[P]) -> Callable[P, Response]:
+    """
+    Wrapper for `render_template` that includes some useful additional values shared between many
+    pages.
+    """
+    def expand(input: PartialTuple | FullTuple) -> FullTuple:
+        """
+        Wrapper to add the optional status code parameter to the return tuple.
+        """
+        return input if len(input) == 3 else (input + (200,))
+
+    @wraps(function)
+    def wrapper(*args: P.args, **kwargs: P.kwargs):
+        timer = Timer()
+        template_name, params, status = expand(function(*args, **kwargs))
+        params['query_time'] = timer.time_formatted()
+        resp = Response(render_template(template_name, **params))
+        resp.status_code = status
+        return resp
     return wrapper
 
 

@@ -8,6 +8,11 @@
 html {
     font-family: roboto, sans-serif;
     --fg-primary: black;
+    --bg-primary: white;
+    --bg-secondary: #FAFAFA;
+    --border-primary: #ABABAB;
+    --shadow-primary: rgba(0, 0, 0, .15);
+
     height: 100%;
 }
 
@@ -56,7 +61,7 @@ form.search-widget {
     flex-direction: column;
 }
 form.search-widget>input {
-    border: 1px solid #ABABAB;
+    border: 1px solid var(--border-primary);
 }
 form.search-widget>input:not(:first-child) {
     border-top: none;
@@ -67,3 +72,4 @@ form.search-widget>input:first-child {
 form.search-widget>input:last-child {
     border-radius: 0 0 1mm 1mm;
 }
+

@@ -10,6 +10,7 @@
                 gap: 2mm;
                 flex-grow: 1;
                 position: relative;
+                align-items: flex-start;
             }
             .content>.warnings {
                 position: absolute;
@@ -19,7 +20,9 @@
                 flex-direction: column;
             }
             .content>.warnings>.warning {
-                background-color: red;
+                background-color: #ff5050;
+                border: 1px solid #a33232;
+                box-shadow: 0.5mm 0.5mm 0.5mm var(--shadow-primary);
                 padding: 1mm;
                 box-sizing: border-box;
                 margin: 1mm;
@@ -30,37 +33,61 @@
                 text-align: center;
             }
             .entry {
-                width: 4cm;
                 text-align: center;
                 text-decoration: none;
+                border: 1px solid var(--border-primary);
+                border-radius: 1mm;
+                padding: 1mm;
+                box-shadow: 0.5mm 0.5mm 0.5mm var(--shadow-primary);
+                background-color: var(--bg-secondary);
             }
-            .entry>img {
+            .entry>.preview {
+                width: 3cm;
                 height: 3cm;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .entry>.preview>img {
+                max-width: 100%;
+                max-height: 100%;
+                border-radius: 1mm;
             }
             .entry>.title {
+                width: 3cm;
                 text-align: center;
                 text-decoration: none;
                 color: var(--fg-primary);
+                padding: 1mm 0 0 0;
             }
         </style>
     </head>
     <body class="standard-layout">
         <div class="header">
-            Header Placeholder
+            {% include 'widgets/header.html' %}
         </div>
         <div class="sidebar">
-            {% include 'search_widget.html' %}
+            {% include 'widgets/search.html' %}
         </div>
         <div class="content">
+            {% if warnings | length > 0 %}
+                <div class="warnings">
+                    {% for warning in warnings %}
+                        <div class="warning">{{warning}}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
             {%for entry in entries%}
                 <a class="entry" href="/entry?id={{entry.id}}&q={{query}}">
-                    <img src="/api/entries/preview?id={{entry.id}}" />
+                    <div class="preview">
+                        <img src="/api/entries/preview?id={{entry.id}}" />
+                    </div>
                     <div class="title">{{entry.item_name}}</div>
                 </a>
-            {%endfor%}
+            {% endfor %}
         </div>
         <div class="footer">
-            Search completed in {{search_time}}
+            {% include 'widgets/footer.html' %}
         </div>
     </body>
 </html>
