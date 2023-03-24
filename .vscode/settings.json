@@ -7,6 +7,7 @@
         "frombuffer",
         "isin",
         "jsonify",
+        "markdowner",
         "mktime",
         "rowid",
         "sessionmaker",

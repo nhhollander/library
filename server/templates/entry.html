@@ -15,6 +15,23 @@
                 width: 100%;
                 border: none;
             }
+            fieldset {
+                border: 1px solid var(--border-primary);
+                border-radius: 1mm;
+                margin: 0;
+            }
+            table.entry-info td:first-child {
+                font-weight: bold;
+                text-align: right;
+            }
+            p {
+                margin: 0;
+            }
+            fieldset.markdown {
+                display: flex;
+                flex-direction: column;
+                gap: 2mm;
+            }
         </style>
     </head>
     <body class="standard-layout">
@@ -23,24 +40,53 @@
         </div>
         <div class="sidebar">
             {% include 'widgets/search.html' %}
-            <table>
-                <tr>
-                    <td>Title</td>
-                    <td>{{entry.item_name}}</td>
-                </tr>
-                <tr>
-                    <td>Created</td>
-                    <td>{{entry.date_created}}</td>
-                </tr>
-                <tr>
-                    <td>Digitized</td>
-                    <td>{{entry.date_digitized}}</td>
-                </tr>
-                <tr>
-                    <td>Modified</td>
-                    <td>{{entry.date_modified}}</td>
-                </tr>
-            </table>
+            <fieldset>
+                <legend>Tags</legend>
+                {% for tag in entry.tags %}
+                    <a href="/search?q={{tag}}">{{tag}}</a>
+                {% endfor %}
+            </fieldset>
+            <fieldset>
+                <legend>Entry Information</legend>
+                <table class="entry-info">
+                    <tr>
+                        <td>Title</td>
+                        <td>{{entry.item_name}}</td>
+                    </tr>
+                    <tr>
+                        <td>Created</td>
+                        <td localize="date">{{formatting.timestamp_friendly(entry.date_created)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Digitized</td>
+                        <td localize="date">{{formatting.timestamp_friendly(entry.date_digitized)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Indexed</td>
+                        <td localize="date">{{formatting.timestamp_friendly(entry.date_digitized)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Modified</td>
+                        <td localize="date">{{formatting.timestamp_friendly(entry.date_modified)}}</td>
+                    </tr>
+                    <tr>
+                        <td>Size</td>
+                        <td>{{formatting.file_size(entry.size)}}</td>
+                    </tr>
+                </table>
+            </fieldset>
+            {% if entry.description %}
+                <fieldset class="markdown">
+                    <legend>Description</legend>
+                    {{markdown(entry.description)|safe}}
+                </fieldset>
+            {% endif %}
+            {% if entry.transcription %}
+                <fieldset class="markdown">
+                    <legend>Transcription</legend>
+                    {{markdown(entry.transcription)|safe}}
+                </fieldset>
+            {% endif %}
         </div>
         <div class="content">
             {% include 'widgets/messages.html' %}

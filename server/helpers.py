@@ -9,8 +9,11 @@ import traceback
 from typing_extensions import TypedDict
 from database import Database
 import server
+from util import formatting
+from markdown2 import Markdown  # type: ignore (Missing stub file)
 
 validator = Validator(raise_exception=True)
+markdowner = Markdown()
 
 
 # ========== #
@@ -120,6 +123,8 @@ def templateWrapper(function: TemplateFunc[P]) -> Callable[P, Response]:
         template_name, params, status = expand(function(*args, **kwargs))
         params = cast(dict[str, Any], params)  # Strip away any special typing information
         params['query_time'] = timer.time_formatted()
+        params['formatting'] = formatting
+        params['markdown'] = markdowner.convert
         resp = Response(render_template(template_name, **params))
         resp.status_code = status
         return resp

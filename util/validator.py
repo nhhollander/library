@@ -1,7 +1,8 @@
-from typing import Any, cast
+from typing import Any, cast, get_args
 from typing_extensions import TypedDict
 
 from .plural import plural
+
 
 class ValidationException(Exception):
 
@@ -51,9 +52,10 @@ class Validator:
         # Basic (non subscripted) types can be compared directly
         if not (type_is_typed_dict or type_is_generic_type):
             if not isinstance(obj, t):
-                return self.__error(__path, f"Incorrect type: Expected {type_name} got {object_name}")
+                return self.__error(__path,
+                                    f"Incorrect type: Expected {type_name} got {object_name}")
             return True
-    
+
         # Special type handlers
         if type_is_typed_dict:
             return self.__validate_TypedDict(obj, cast(type[TypedDict], t), __path)
@@ -61,23 +63,23 @@ class Validator:
         if type_origin == tuple and object_is_tuple_like:
             return self.__validate_Tuple(obj, t, __path)
 
-        # Base type validation 
+        # Base type validation
         if not isinstance(obj, type_origin):
-            return self.__error(__path, f"Incorrect base type: Expected {type_name} got {object_name}")
+            return self.__error(__path,
+                                f"Incorrect base type: Expected {type_name} got {object_name}")
 
         # Standard type handlers
         if type_origin == list:
             return self.__validate_List(obj, t, __path)
         if type_origin == dict:
             return self.__validate_Dict(obj, t, __path)
-        
+
         # Unrecognized generic class
         raise ValidationException(__path, f"Unsupported type {type_name}")
 
-        
-    ##=======================##
-    ## Special type handlers ##
-    ##=======================##
+    # ======================= #
+    #  Special type handlers  #
+    # ======================= #
 
     def __validate_TypedDict(self, obj: Any, t: type[TypedDict], __path: list[str]):
         """
@@ -86,11 +88,12 @@ class Validator:
         # Make sure that required keys are present
         missing_required = [key for key in t.__required_keys__ if key not in obj]
         if len(missing_required) > 0:
-            return self.__error(__path, f"Missing required key{plural(missing_required)}: {missing_required}")
+            return self.__error(__path, f"Missing required key{plural(missing_required)}: "
+                                        f"{missing_required}")
         # Validate required and optional key types
         raw_types = t.__annotations__
         types: dict[str, type] = {key: raw_types[key] for key in t.__required_keys__} | \
-            {key: raw_types[key].__args__[0] for key in t.__optional_keys__ if key in obj}
+            {key: get_args(raw_types[key])[0] for key in t.__optional_keys__ if key in obj}
         return all([self.validate(obj[key], types[key], __path + [key]) for key in types])
 
     def __validate_Tuple(self, obj: Any, t: type, __path: list[str]):
@@ -99,29 +102,33 @@ class Validator:
         as JSON) do not differentiate between tuples and lists, so it treats the two types as
         identical.
         """
-        type_generic_args = cast(list[type], getattr(t, '__args__'))
+        type_generic_args = cast(list[type], get_args(t))
         obj_cast = cast(list[Any], obj)
         arg_diff = len(type_generic_args) - len(obj_cast)
         if arg_diff != 0:
-            return self.__error(__path, f"Too {'many' if arg_diff < 0 else 'few'} items: Expected {len(type_generic_args)} got {len(obj_cast)}")
-        return all([self.validate(obj_cast[i], t, __path + [str(i)]) for i,t in enumerate(type_generic_args)])
+            err = 'many' if arg_diff < 0 else 'few'
+            return self.__error(__path, f"Too {err} items: Expected {len(type_generic_args)} "
+                                        f"got {len(obj_cast)}")
+        enumerator = enumerate(type_generic_args)
+        return all([self.validate(obj_cast[i], t, __path + [str(i)]) for i, t in enumerator])
 
-    ##========================##
-    ## Standard type handlers ##
-    ##========================##
+    # ======================== #
+    #  Standard type handlers  #
+    # ======================== #
 
     def __validate_List(self, obj: Any, t: type, __path: list[str]):
         """Validation handler for lists"""
         obj_cast = cast(list[Any], obj)
-        required_type: type = cast(list[type], getattr(t, '__args__'))[0]
-        return all([self.validate(x, required_type, __path + [str(i)]) for i, x in enumerate(obj_cast)])
+        required_type: type = cast(list[type], get_args(t))[0]
+        enumerator = enumerate(obj_cast)
+        return all([self.validate(x, required_type, __path + [str(i)]) for i, x in enumerator])
 
     def __validate_Dict(self, obj: Any, t: type, __path: list[str]):
         """Validation handler for dictionaries"""
         obj_cast = cast(dict[Any, Any], obj)
-        key_type, value_type = cast(tuple[type, type], getattr(t, '__args__'))
+        key_type, value_type = cast(tuple[type, type], get_args(t))
+
         def test(key: Any, value: Any):
             return self.validate(key, key_type, __path + [key]) and \
                 self.validate(value, value_type, __path + [key])
         return all([test(key, obj_cast[key]) for key in obj_cast])
-    
