@@ -1,5 +1,5 @@
 import time
-
+from typing import TypeAlias, Literal
 from .types import SearchParameters
 from dateutil import parser
 
@@ -22,6 +22,11 @@ def parse_search(query: str) -> tuple[SearchParameters, list[str]]:
     return params, issues
 
 
+SearchParametersDates: TypeAlias = Literal['since', 'until', 'since_modified', 'until_modified',
+                                           'since_digitized', 'until_digitized', 'since_indexed',
+                                           'until_indexed']
+
+
 def __parse_special(token: str, params: SearchParameters, issues: list[str]):
     """
     Special queries consist of a command and a value separated by a colon.
@@ -29,7 +34,7 @@ def __parse_special(token: str, params: SearchParameters, issues: list[str]):
     command, value = token.split(":", 1)
 
     # Parse date entries
-    def special_datetime(key: str):
+    def special_datetime(key: SearchParametersDates):
         if command == key:
             params[key] = __parse_datetime(value, issues)
     special_datetime('since')

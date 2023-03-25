@@ -1,67 +1,84 @@
 from flask import Blueprint
 from typing_extensions import TypedDict, NotRequired
 
-from server.helpers import exceptionWrapper, success, args, RequestError
-import server
+from server.helpers import exceptionWrapper, success, args, RequestError, withDatabase
 
+from database import Database
 from database.exceptions import TagExistsException, TagDoesNotExistException
-
-tag_api = Blueprint('tag_api', __name__, url_prefix='/tags')
-
-@tag_api.route("/list")
-@exceptionWrapper
-def listTags():
-    return success(server.db.get_all_tags())
 
 from typing import TypeVar
 
+tag_api = Blueprint('tag_api', __name__, url_prefix='/tags')
+
+
+@tag_api.route("/list")
+@exceptionWrapper
+@withDatabase
+def listTags(db: Database):
+    return success([(x.name, x.post_count) for x in db.get_all_tags()])
+
+
 GenericDict = TypeVar('GenericDict', bound=TypedDict)
+
 
 class CreateTagArgs(TypedDict):
     tag: str
+
+
 @tag_api.route("/create")
 @exceptionWrapper
 @args(CreateTagArgs)
-def createTag(args: CreateTagArgs):
+@withDatabase
+def createTag(db: Database, args: CreateTagArgs):
     # Attempt to create
     try:
-        server.db.create_tag(args['tag'])
+        db.create_tag(args['tag'])
         return success({
             "tag": args['tag']
         })
     except TagExistsException:
-        raise RequestError(f"Tag already exists")
+        raise RequestError("Tag already exists")
+
 
 RenameTagArgs = TypedDict('RenameTagArgs', {
     'tag': str,
     'new_tag': str
 })
+
+
 @tag_api.route("/rename")
 @exceptionWrapper
 @args(RenameTagArgs)
-def renameTag(args: RenameTagArgs):
+@withDatabase
+def renameTag(db: Database, args: RenameTagArgs):
     try:
-        server.db.rename_tag(args['tag'], args['new_tag'])
+        db.rename_tag(args['tag'], args['new_tag'])
         return success({
             "tag": args['tag'],
             "new_tag": args['new_tag']
         })
     except TagDoesNotExistException:
-        raise RequestError(f"Unable to rename {args['tag']} to {args['new_tag']}, tag does not exist", 404)
+        reason = "tag does not exist"
+        code = 404
     except TagExistsException:
-        raise RequestError(f"Unable to rename {args['tag']} to {args['new_tag']}, tag already exists")
+        reason = "tag already exists"
+        code = 400
+    raise RequestError(f"Unable to rename {args['tag']} to {args['new_tag']}, {reason}", code)
 
 
 DeleteTagArgs = TypedDict('DeleteTagArgs', {
     'tag': str,
     'replacement': NotRequired[str]
 })
+
+
 @tag_api.route("/delete")
 @exceptionWrapper
 @args(DeleteTagArgs)
-def deleteTag(args: DeleteTagArgs):
+@withDatabase
+def deleteTag(db: Database, args: DeleteTagArgs):
     try:
-        server.db.delete_tag(args['tag'], args.get('replacement'))
+        db.delete_tag(args['tag'], args.get('replacement'))
         return success({
             "tag": args['tag'],
             "replacement": args.get('replacement')

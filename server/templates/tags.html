@@ -17,7 +17,7 @@
                 border: 1px solid var(--border-primary);
                 border-radius: 1mm;
             }
-            img[action] {
+            img.icon {
                 height: 5mm;
                 cursor: pointer;
             }
@@ -111,8 +111,9 @@
                                 <td>{{tag.name}}</td>
                                 <td>{{tag.post_count}}</td>
                                 <td>
-                                    <img action="delete" tag={{tag.name}} src="/static/icons/coolicons/trash-full.svg">
-                                    <img action="rename" tag={{tag.name}} src="/static/icons/coolicons/edit-pencil.svg">
+                                    <img class="icon" action="delete" tag={{tag.name}} src="/static/icons/coolicons/trash-full.svg">
+                                    <img class="icon" action="rename" tag={{tag.name}} src="/static/icons/coolicons/edit-pencil.svg">
+                                    <a href="/search?q={{tag.name}}"><img class="icon" src="/static/icons/coolicons/search-magnifying-glass.svg"/></a>
                                 </td>
                             </tr>
                         {% endfor %}

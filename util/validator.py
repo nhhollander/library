@@ -86,14 +86,16 @@ class Validator:
         Special validation handler for `TypedDict` objects.
         """
         # Make sure that required keys are present
-        missing_required = [key for key in t.__required_keys__ if key not in obj]
+        required_keys: list[str] = getattr(t, '__required_keys__')
+        optional_keys: list[str] = getattr(t, '__optional_keys__')
+        missing_required = [key for key in required_keys if key not in obj]
         if len(missing_required) > 0:
             return self.__error(__path, f"Missing required key{plural(missing_required)}: "
                                         f"{missing_required}")
         # Validate required and optional key types
         raw_types = t.__annotations__
-        types: dict[str, type] = {key: raw_types[key] for key in t.__required_keys__} | \
-            {key: get_args(raw_types[key])[0] for key in t.__optional_keys__ if key in obj}
+        types: dict[str, type] = {key: raw_types[key] for key in required_keys} | \
+            {key: get_args(raw_types[key])[0] for key in optional_keys if key in obj}
         return all([self.validate(obj[key], types[key], __path + [key]) for key in types])
 
     def __validate_Tuple(self, obj: Any, t: type, __path: list[str]):

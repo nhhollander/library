@@ -10,7 +10,7 @@ def credits():
     Generate a credits page from the credits file.
 
     TODO: Read the license field from the third party resources and add additional information to
-    the output based on 
+    the output based on the license specifics, such as OSI/FSF approval and link to more info.
     """
 
     file_path = Path(__file__).parent.absolute()

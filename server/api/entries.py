@@ -1,16 +1,17 @@
-from flask import Blueprint, send_file  # type: ignore (PyLance mis-detected type of `path_or_file`)
+from flask import Blueprint, send_file  # type: ignore
 from typing_extensions import TypedDict
 from database.entry import EntryUpdateParams
 from database.exceptions import DatabaseException
 
 from server.helpers import RequestError, exceptionWrapper, success, args, withDatabase
-import xdg.BaseDirectory  # type: ignore (Missing stub file)
-from pathlib import Path
+import xdg.BaseDirectory  # type: ignore
 import hashlib
 import os
 import config
 from database import Database
 from util import mime as mime_util
+
+from pathlib import Path
 
 entry_api = Blueprint('entry_api', __name__, url_prefix='/entries')
 

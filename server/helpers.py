@@ -1,4 +1,5 @@
 from typing import Type, Literal, Callable, TypeVar, cast, ParamSpec, Concatenate, Any
+from typing_extensions import TypedDict, NotRequired
 from functools import wraps
 from flask import jsonify, request, Response, render_template
 from util.timer import Timer
@@ -6,11 +7,10 @@ from util.validator import ValidationException, Validator
 import dateutil.parser
 import json
 import traceback
-from typing_extensions import TypedDict, NotRequired
 from database import Database
 import server
 from util import formatting
-from markdown2 import Markdown  # type: ignore (Missing stub file)
+from markdown2 import Markdown  # type: ignore
 
 validator = Validator(raise_exception=True)
 markdowner = Markdown()
@@ -115,7 +115,7 @@ def templateWrapper(function: TemplateFunc[P]) -> Callable[P, Response]:
         """
         Wrapper to add the optional status code parameter to the return tuple.
         """
-        return input if len(input) == 3 else (input + (200,))
+        return input if len(input) == 3 else (input + (200,))  # type: ignore
 
     @wraps(function)
     def wrapper(*args: P.args, **kwargs: P.kwargs):

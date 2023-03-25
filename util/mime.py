@@ -1,4 +1,4 @@
-from xdg import IconTheme  # type: ignore (Missing stubs)
+from xdg import IconTheme  # type: ignore
 import re
 import config
 from typing import cast

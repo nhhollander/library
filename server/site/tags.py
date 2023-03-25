@@ -38,20 +38,17 @@ def __process_actions(db: Database, args: TagActions) -> Message:
         # This should never happen
         raise RuntimeError("Missing action")
 
-    if args['action'] not in ['create', 'delete', 'rename']:
-        return Err(f"Invalid action '{args['action']}")
-
     if 'tag' not in args or args['tag'] == '':
         return Err("Missing required parameter 'tag'")
 
     if args['action'] == 'create':
         return __create(db, args['tag'])
-
-    elif args['action'] == 'delete':
+    if args['action'] == 'delete':
         return __delete(db, args['tag'], args.get('new_tag'))
-
-    elif args['action'] == 'rename':
+    if args['action'] == 'rename':
         return __rename(db, args['tag'], args.get('new_tag'))
+
+    return Err(f"Invalid action '{args['action']}")
 
 
 def __create(db: Database, tag: str) -> Message:

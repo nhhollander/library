@@ -1,5 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+
 class Base(DeclarativeBase):
     """
     Base class for all database entries. The `id` column is an INTEGER PRIMARY KEY which acts as an

@@ -250,7 +250,7 @@ class Entry(Base):
             # Apply direct updates
             for field in getattr(params, '__required_keys__'):
                 if field in params:
-                    setattr(self, field, params[field])
+                    setattr(self, field, getattr(params, field))
         except Exception as e:
             # If any exception is encountered roll back the changes we just made
             self.__session.rollback()

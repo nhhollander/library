@@ -1,5 +1,6 @@
 from sqlalchemy import Engine, create_engine, func, event
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
+from sqlalchemy.exc import NoResultFound
 
 from typing import ParamSpec, TypeVar
 
@@ -149,7 +150,7 @@ class Database:
 
     def get_all_tags(self):
         """Retrieve a list of all tags known to the database."""
-        return [tag for tag in self.__session.query(Tag).all()]
+        return self.__session.query(Tag).all()
 
     def tag_exists(self, tag: str):
         return self.__session.query(Tag).filter(Tag.name == tag).count() > 0
@@ -170,19 +171,17 @@ class Database:
         except InvalidTagException as e:
             return e.tags
 
-    def create_tag(self, tag: str, commit: bool = True):
+    def create_tag(self, tag: str):
         """
         Register a new tag in the database. If the tag already exists, an exception will be raised.
 
         :param tag: The tag name to create.
-        :param commit: Set to False to prevent the change from being automatically persisted.
         """
         if self.tag_exists(tag):
             raise TagExistsException(tag)
         newTag = Tag(name=tag)
         self.__session.add(newTag)
-        if commit:
-            self.commit()
+        self.commit()
 
     def delete_tag(self, tag: str, new_tag_name: str | None = None):
         """
@@ -192,9 +191,10 @@ class Database:
         :param tag: The tag to delete
         :param new_tag: The optional tag to replace all instance of `tag` with
         """
-        if not self.tag_exists(tag):
+        try:
+            old_tag = self.__session.query(Tag).filter(Tag.name == tag).one()
+        except NoResultFound:
             raise TagDoesNotExistException(tag)
-        old_tag = self.__session.query(Tag).filter(Tag.name == tag).one()
         new_tag = self.__session.query(Tag).filter(Tag.name == new_tag_name).one_or_none()
         if new_tag:
             new_tag.post_count += old_tag.post_count
@@ -206,24 +206,23 @@ class Database:
             else:
                 entry.remove_tag(old_tag.id)
         self.__session.delete(old_tag)
-        self.__session.commit()
+        self.commit()
 
-    def rename_tag(self, tag: str, new_tag: str, commit: bool = True):
+    def rename_tag(self, tag: str, new_tag: str):
         """
         Rename an existing tag. All entries will refer to this new name.
 
         :param tag: The old tag name
         :param new_tag: The new tag name
-        :param commit: Set to False to prevent the change from being automatically persisted.
         """
-        if not self.tag_exists(tag):
+        try:
+            tag_object = self.__session.query(Tag).where(Tag.name == tag).one()
+        except NoResultFound:
             raise TagDoesNotExistException(tag)
         if self.tag_exists(new_tag):
             raise TagExistsException(new_tag)
-        tag_object = self.__session.query(Tag).where(Tag.name == tag).one()
         tag_object.name = new_tag
-        if commit:
-            self.commit()
+        self.commit()
 
     def update_tag_counts(self):
         """
