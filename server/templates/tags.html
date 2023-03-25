@@ -28,6 +28,19 @@
             table.tag-table td {
                 border: 1px solid var(--border-primary);
                 padding: 1mm;
+                line-height: 5mm;
+                vertical-align: center;
+            }
+            table.tab-table>thead td {
+                text-align: center;
+                font-weight: bold;
+            }
+            table.tab-table>thead td>* {
+                /* Required to properly align icons in the header of the table */
+                vertical-align: middle;
+            }
+            table.tag-table td:nth-child(3) { /* Post Count Column */
+                text-align: right;
             }
             table.tag-table td:nth-child(4) { /* Actions Column */
                 text-align: center;
@@ -35,7 +48,7 @@
         </style>
         <script>
             function init() {
-                // Add action handlers
+                // Add button handlers
                 document.querySelectorAll("img[action]").forEach((element) => {
                     element.addEventListener('click', (event) => {
                         const tag = event.target.getAttribute('tag');
@@ -48,6 +61,19 @@
                             const elem = document.getElementById('rename-name');
                             elem.value = tag;
                             elem.focus();
+                        } else if (action == 'sort') {
+                            const elem = event.target;
+                            let reverse = false;
+                            if(elem.hasAttribute('reverse')) {
+                                reverse = true;
+                                elem.removeAttribute('reverse');
+                            } else {
+                                elem.setAttribute('reverse','');
+                            }
+                            sort_table(
+                                parseInt(elem.getAttribute("col")),
+                                elem.hasAttribute('numericSort'),
+                                reverse);
                         } else {
                             console.warn(`Unknown action ${action} on element ${event.target}`);
                         }
@@ -55,6 +81,22 @@
                 });
             }
             document.addEventListener('DOMContentLoaded', init);
+
+            function sort_table(col, numeric, reverse) {
+                const body = document.querySelector("table.tag-table>tbody");
+                const rows = Array.from(document.querySelectorAll("table.tag-table>tbody>tr"));
+                let sorted = rows.sort((a, b) => {
+                    const colA = a.children[col];
+                    const colB = b.children[col];
+                    let valA = numeric ? parseInt(colA.innerText) : colA.innerText;
+                    let valB = numeric ? parseInt(colB.innerText) : colB.innerText;
+                    return valA > valB;
+                });
+                if(reverse) {
+                    sorted.reverse()
+                }
+                sorted.forEach((e) => body.appendChild(e));
+            }
         </script>
     </head>
     <body class="standard-layout">
@@ -98,9 +140,18 @@
                 <table class="tag-table">
                     <thead>
                         <tr>
-                            <td>ID</td>
-                            <td>Tag</td>
-                            <td>Count</td>
+                            <td>
+                                <span>ID</span>
+                                <img class="icon" action="sort" col="0" numericSort src="/static/icons/coolicons/arrow-down-up.svg"/>
+                            </td>
+                            <td>
+                                <span>Tag</span>
+                                <img class="icon" action="sort" col="1" src="/static/icons/coolicons/arrow-down-up.svg"/>
+                            </td>
+                            <td>
+                                <span>Count</span>
+                                <img class="icon" action="sort" col="2" numericSort src="/static/icons/coolicons/arrow-down-up.svg"/>
+                            </td>
                             <td>Actions</td>
                         </tr>
                     </thead>
@@ -111,8 +162,8 @@
                                 <td>{{tag.name}}</td>
                                 <td>{{tag.post_count}}</td>
                                 <td>
-                                    <img class="icon" action="delete" tag={{tag.name}} src="/static/icons/coolicons/trash-full.svg">
-                                    <img class="icon" action="rename" tag={{tag.name}} src="/static/icons/coolicons/edit-pencil.svg">
+                                    <img class="icon" action="delete" tag={{tag.name}} src="/static/icons/coolicons/trash-full.svg"/>
+                                    <img class="icon" action="rename" tag={{tag.name}} src="/static/icons/coolicons/edit-pencil.svg"/>
                                     <a href="/search?q={{tag.name}}"><img class="icon" src="/static/icons/coolicons/search-magnifying-glass.svg"/></a>
                                 </td>
                             </tr>

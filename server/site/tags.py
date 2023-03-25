@@ -41,12 +41,17 @@ def __process_actions(db: Database, args: TagActions) -> Message:
     if 'tag' not in args or args['tag'] == '':
         return Err("Missing required parameter 'tag'")
 
+    # This library system is not designed to handle tags with spaces in the name. To maintain
+    # consistency, replace any spaces in tag operations with underscores.
+    tag = args['tag'].replace(" ", "_")
+    new_tag = args['new_tag'].replace(" ", "_") if 'new_tag' in args else None
+
     if args['action'] == 'create':
-        return __create(db, args['tag'])
+        return __create(db, tag)
     if args['action'] == 'delete':
-        return __delete(db, args['tag'], args.get('new_tag'))
+        return __delete(db, tag, new_tag)
     if args['action'] == 'rename':
-        return __rename(db, args['tag'], args.get('new_tag'))
+        return __rename(db, tag, new_tag)
 
     return Err(f"Invalid action '{args['action']}")
 

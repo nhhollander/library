@@ -73,6 +73,10 @@
                         <td>Size</td>
                         <td>{{formatting.file_size(entry.size)}}</td>
                     </tr>
+                    <tr>
+                        <td>Type</td>
+                        <td>{{entry.mime_type}}</td>
+                    </tr>
                 </table>
             </fieldset>
             {% if entry.description %}
