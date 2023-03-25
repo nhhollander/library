@@ -6,7 +6,7 @@ from util.validator import ValidationException, Validator
 import dateutil.parser
 import json
 import traceback
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict, NotRequired
 from database import Database
 import server
 from util import formatting
@@ -165,8 +165,8 @@ class StandardRenderParams(TypedDict):
     """
     A set of parameters found on most pages.
     """
-    query: str
-    messages: list[Message]
+    query: NotRequired[str]
+    messages: NotRequired[list[Message]]
 
 
 # ================ #

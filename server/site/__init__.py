@@ -7,7 +7,13 @@ from typing_extensions import TypedDict, NotRequired
 from database import searchStringParser, Database
 from util import mime
 
+from .credits import credits
+from .tags import tags
+
 site = Blueprint('site', __name__)
+
+site.add_url_rule('/credits', '/credits', credits)
+site.add_url_rule('/tags', '/tags', tags)
 
 
 @site.route("/")

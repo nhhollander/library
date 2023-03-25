@@ -1,5 +1,5 @@
 {
-    "$schema": "./config.schema.json",
+    "$schema": "./schemas/config.schema.json",
     "dataRoot": "/archive/LIBRARY/data",
     "search": {
         "defaultCount": 50,

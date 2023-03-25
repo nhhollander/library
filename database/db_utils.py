@@ -61,3 +61,8 @@ def encode_tags(tags: List[int]):
     Convert a list of tag IDs into a 16 bit encoded array.
     """
     return np.array(tags, np.uint16).tobytes()
+
+
+def decode_tags(tags: bytes) -> list[int]:
+    """Convert a 16 bit encoded array into tag IDs."""
+    return np.frombuffer(tags, np.uint16).tolist()

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Library - Third Party Credits</title>
+        <link rel="stylesheet" href="/static/style.css"/>
+        <style>
+            .content {
+                display: flex;
+                flex-direction: column;
+                gap: 2mm;
+                position: relative;
+            }
+            .icon-sets img {
+                height: 1cm;
+            }
+        </style>
+    </head>
+    <body class="standard-layout">
+        <div class="header">
+            {% include 'widgets/header.html' %}
+        </div>
+        <div class="sidebar">
+            {% include 'widgets/search.html' %}
+        </div>
+        <div class="content">
+            {% include 'widgets/messages.html' %}
+            <fieldset>
+                <legend>Contributors</legend>
+                {% for contributor in credits.contributors %}
+                    {% if 'url' in contributor %}
+                        <a rel="nofollow" href="{{contributor.url}}">{{contributor.name}}</a>
+                    {% else %}
+                        <span>{{contributor.name}}</span>
+                    {% endif %}
+                {% endfor %}
+            </fieldset>
+            <fieldset>
+                <legend>Third Party Components</legend>
+                {% for component in credits.third_party %}
+                    <a rel="nofollow" href="{{component.url}}">{{component.name}}</a> by {{component.author}} ({{component.license}})
+                {% endfor %}
+            </fieldset>
+        </div>
+        <div class="footer">
+            {% include 'widgets/footer.html' %}
+        </div>
+    </body>
+</html>

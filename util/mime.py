@@ -28,6 +28,8 @@ def find_icon_name(mime_type: str) -> str:
     return icon_name
 
 
+# pyxdg is not thread safe, simultaneous access from multiple threads can result in `None` being
+# improperly returned from the icon path lookup function.
 __icon_lookup_lock = Lock()
 
 

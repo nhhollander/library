@@ -9,6 +9,7 @@
         "jsonify",
         "markdowner",
         "mktime",
+        "pyxdg",
         "rowid",
         "sessionmaker",
         "setdiff",

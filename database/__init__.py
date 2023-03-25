@@ -4,12 +4,13 @@ from sqlalchemy.orm import scoped_session, sessionmaker, Session
 from typing import ParamSpec, TypeVar
 
 from database.exceptions import InvalidTagException, TagDoesNotExistException, TagExistsException
+from util.timer import Timer
 
 from .base import Base
 from .tag import Tag
 from .entry import Entry
 from .types import SearchParameters
-from .db_utils import get_tag_id, get_tag_ids, encode_tags, get_tag_ids_multiple
+from .db_utils import decode_tags, get_tag_ids, encode_tags, get_tag_ids_multiple
 from .functions import register
 
 # Register the custom function manager
@@ -118,21 +119,21 @@ class Database:
 
         # Time ranges
         if 'since' in params:
-            query.filter(Entry.date_created >= params['since'])
+            query.filter(Entry.date_created_raw >= params['since'])
         if 'until' in params:
-            query.filter(Entry.date_created <= params['until'])
+            query.filter(Entry.date_created_raw <= params['until'])
         if 'since_modified' in params:
-            query.filter(Entry.date_modified >= params['since_modified'])
+            query.filter(Entry.date_modified_raw >= params['since_modified'])
         if 'until_modified' in params:
-            query.filter(Entry.date_modified <= params['until_modified'])
+            query.filter(Entry.date_modified_raw <= params['until_modified'])
         if 'since_digitized' in params:
-            query.filter(Entry.date_digitized >= params['since_digitized'])
+            query.filter(Entry.date_digitized_raw >= params['since_digitized'])
         if 'until_digitized' in params:
-            query.filter(Entry.date_digitized <= params['until_digitized'])
+            query.filter(Entry.date_digitized_raw <= params['until_digitized'])
         if 'since_indexed' in params:
-            query.filter(Entry.date_indexed >= params['since_indexed'])
+            query.filter(Entry.date_indexed_raw >= params['since_indexed'])
         if 'until_indexed' in params:
-            query.filter(Entry.date_indexed <= params['until_indexed'])
+            query.filter(Entry.date_indexed_raw <= params['until_indexed'])
 
         # Quantity and Page
         page_size = min(max(0, params.get('count', DEFAULT_POST_LIMIT)), PAGE_SIZE_LIMIT)
@@ -148,7 +149,7 @@ class Database:
 
     def get_all_tags(self):
         """Retrieve a list of all tags known to the database."""
-        return [tag.name for tag in self.__session.query(Tag).all()]
+        return [tag for tag in self.__session.query(Tag).all()]
 
     def tag_exists(self, tag: str):
         return self.__session.query(Tag).filter(Tag.name == tag).count() > 0
@@ -183,7 +184,7 @@ class Database:
         if commit:
             self.commit()
 
-    def delete_tag(self, tag: str, new_tag: str | None = None):
+    def delete_tag(self, tag: str, new_tag_name: str | None = None):
         """
         Remove a tag from the database and deletes it from all entries, optionally replacing it
         with the new tag.
@@ -193,16 +194,19 @@ class Database:
         """
         if not self.tag_exists(tag):
             raise TagDoesNotExistException(tag)
-        old_id = get_tag_id(self.__session, tag)
-        new_id = get_tag_id(self.__session, new_tag) if new_tag else -1
+        old_tag = self.__session.query(Tag).filter(Tag.name == tag).one()
+        new_tag = self.__session.query(Tag).filter(Tag.name == new_tag_name).one_or_none()
+        if new_tag:
+            new_tag.post_count += old_tag.post_count
         affected_entries = self.__session \
-            .query(Entry).filter(func.has_tag(Entry.tags_raw, old_id)).all()
+            .query(Entry).filter(func.has_tag(Entry.tags_raw, old_tag.id)).all()
         for entry in affected_entries:
-            entry.remove_tag(old_id)
             if new_tag:
-                entry.add_tag(new_id)
-        self.__session.query(Tag).where(Tag.id == old_id).delete()
-        self.commit()
+                entry.replace_tag(old_tag.id, new_tag.id)
+            else:
+                entry.remove_tag(old_tag.id)
+        self.__session.delete(old_tag)
+        self.__session.commit()
 
     def rename_tag(self, tag: str, new_tag: str, commit: bool = True):
         """
@@ -220,6 +224,35 @@ class Database:
         tag_object.name = new_tag
         if commit:
             self.commit()
+
+    def update_tag_counts(self):
+        """
+        Iterate over the database and collect updated tag counts. This is a pretty expensive query
+        to run and should only be used to repair the database after tags have been manually
+        adjusted or other changes have been made that requires a full recalculation.
+
+        :returns: A tuple containing the number of tags updated and the amount of time it took.
+        """
+        timer = Timer()
+        print("Starting tag update")
+        tag_map: dict[int, Tag] = {}
+        for tag in self.__session.query(Tag).all():
+            tag_map[tag.id] = tag
+            tag.post_count = 0
+        print(f"Sorted tag objects in {timer.time_formatted()}, starting count")
+        timer.lap()
+        for entry_id, raw_tags in self.__session.query(Entry.id, Entry.tags_raw).all():
+            for id in decode_tags(raw_tags):
+                if id not in tag_map:
+                    print(f"Entry {entry_id} contains invalid tag {id}")
+                else:
+                    tag_map[id].post_count += 1
+        print(f"Counted tags in {timer.time_formatted(True)} (total {timer.time_formatted()}), "
+              "saving changes")
+        timer.lap()
+        self.__session.commit()
+        print(f"Changes saved in {timer.time_formatted(True)} (total {timer.time_formatted()})")
+        return len(tag_map), timer.get_time()
 
     # ================== #
     #  Entry Management  #

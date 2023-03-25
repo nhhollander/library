@@ -1,0 +1,17 @@
+{
+    "$schema": "./schemas/credits.schema.json",
+    "contributors": [
+        {
+            "name": "Nicholas Hollander",
+            "url": "https://nicholashollander.com/"
+        }
+    ],
+    "third_party": [
+        {
+            "name": "Coolicons",
+            "author": "Kryston Schwarze",
+            "license": "CC-BY-4.0",
+            "url": "https://coolicons.cool/"
+        }
+    ]
+}

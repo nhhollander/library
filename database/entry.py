@@ -2,13 +2,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm.session import object_session
 
 from typing import cast, Any
-import numpy as np
 
 from database.types import EntryUpdateParams
 
 from .base import Base
 from .tag import Tag
-from .db_utils import get_tag_ids, get_tag_id, encode_tags
+from .db_utils import decode_tags, get_tag_ids, get_tag_id, encode_tags
 from magic import Magic
 from pathlib import Path
 import config
@@ -26,10 +25,10 @@ class Entry(Base):
     tags_raw: Mapped[bytes] = mapped_column(default=b'')
     description:  Mapped[str | None] = mapped_column(nullable=True)
     transcription: Mapped[str | None] = mapped_column(nullable=True)
-    __date_created: Mapped[float] = mapped_column(name='date_created')
-    __date_digitized: Mapped[float] = mapped_column(name='date_digitized')
-    __date_indexed: Mapped[float] = mapped_column(name='date_indexed')
-    __date_modified: Mapped[float] = mapped_column(name='date_modified')
+    date_created_raw: Mapped[float] = mapped_column(name='date_created')
+    date_digitized_raw: Mapped[float] = mapped_column(name='date_digitized')
+    date_indexed_raw: Mapped[float] = mapped_column(name='date_indexed')
+    date_modified_raw: Mapped[float] = mapped_column(name='date_modified')
     location: Mapped[str | None] = mapped_column(nullable=True)
     __mime_type: Mapped[str | None] = mapped_column(nullable=True, name='mime_type')
     __mime_icon: Mapped[str | None] = mapped_column(nullable=True, name='mime_icon')
@@ -102,7 +101,7 @@ class Entry(Base):
     @property
     def tag_ids(self):
         """Get a list of numeric tag IDs associated with this entry."""
-        return np.frombuffer(self.tags_raw, np.uint16).tolist()
+        return decode_tags(self.tags_raw)
 
     @property
     def tags(self):
@@ -113,6 +112,9 @@ class Entry(Base):
     @tags.setter
     def tags(self, tags: list[str] | list[int]):
         """Update the tags associated with this entity."""
+        if len(tags) == 0:
+            self.tags_raw = b''
+            return
         tag_ids: list[int]
         if isinstance(tags[0], str):
             session = self.__session
@@ -135,35 +137,35 @@ class Entry(Base):
 
     @property
     def date_created(self):
-        return self.__dt_from_unix(self.__date_created)
+        return self.__dt_from_unix(self.date_created_raw)
 
     @date_created.setter
     def date_created(self, dt: datetime | str):
-        self.__date_created = self.__dt_to_unix(dt)
+        self.date_created_raw = self.__dt_to_unix(dt)
 
     @property
     def date_digitized(self):
-        return self.__dt_from_unix(self.__date_digitized)
+        return self.__dt_from_unix(self.date_digitized_raw)
 
     @date_digitized.setter
     def date_digitized(self, dt: datetime | str):
-        self.__date_digitized = self.__dt_to_unix(dt)
+        self.date_digitized_raw = self.__dt_to_unix(dt)
 
     @property
     def date_indexed(self):
-        return self.__dt_from_unix(self.__date_indexed)
+        return self.__dt_from_unix(self.date_indexed_raw)
 
     @date_indexed.setter
     def date_indexed(self, dt: datetime | str):
-        self.__date_indexed = self.__dt_to_unix(dt)
+        self.date_indexed_raw = self.__dt_to_unix(dt)
 
     @property
     def date_modified(self):
-        return self.__dt_from_unix(self.__date_modified)
+        return self.__dt_from_unix(self.date_modified_raw)
 
     @date_modified.setter
     def date_modified(self, dt: datetime | str):
-        self.__date_modified = self.__dt_to_unix(dt)
+        self.date_modified_raw = self.__dt_to_unix(dt)
 
     # ================ #
     # Internal Helpers #
@@ -204,26 +206,38 @@ class Entry(Base):
         data = {key: getattr(self, key) for key in keys}
         return data
 
-    def add_tag(self, tag: str | int, commit: bool = True):
+    def add_tag(self, tag: str | int):
         """
         Add a tag to this entry.
 
         :param tag: Tag name or ID to assign to this entry.
-        :param commit: Set to False to prevent the change from being automatically persisted
         """
         tag_id = get_tag_id(self.__session, tag) if isinstance(tag, str) else tag
         self.tags = self.tag_ids + [tag_id]
 
-    def remove_tag(self, tag: str | int, commit: bool = True):
+    def remove_tag(self, tag: str | int):
         """
         Remove a tag from this entry.
 
         :param tag: The name or ID of the tag to remove from this entry.
-        :param commit: Set to False to prevent the change from being automatically persisted
         """
         tag_id = get_tag_id(self.__session, tag) if isinstance(tag, str) else tag
         tags = set(self.tag_ids)
         tags.remove(tag_id)
+        self.tags = list(tags)
+
+    def replace_tag(self, tag: str | int, new_tag: str | int):
+        """
+        Replace one tag with another on this entity.
+
+        :param tag: The tag to remove
+        :param tag: The tag to replace it with
+        """
+        tag_id = get_tag_id(self.__session, tag) if isinstance(tag, str) else tag
+        new_tag_id = get_tag_id(self.__session, new_tag) if isinstance(new_tag, str) else new_tag
+        tags = set(self.tag_ids)
+        tags.remove(tag_id)
+        tags.add(new_tag_id)
         self.tags = list(tags)
 
     def update_safe(self, params: EntryUpdateParams):

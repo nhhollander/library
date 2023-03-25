@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Library - Tag Management</title>
+        <link rel="stylesheet" href="/static/style.css"/>
+        <style>
+            .content {
+                display: flex;
+                flex-direction: column;
+                gap: 2mm;
+                position: relative;
+            }
+            .quick-actions {
+                display: flex;
+            }
+            fieldset {
+                border: 1px solid var(--border-primary);
+                border-radius: 1mm;
+            }
+            img[action] {
+                height: 5mm;
+                cursor: pointer;
+            }
+            table.tag-table {
+                border: 1px solid var(--border-primary);
+                border-collapse: collapse;
+            }
+            table.tag-table td {
+                border: 1px solid var(--border-primary);
+                padding: 1mm;
+            }
+            table.tag-table td:nth-child(4) { /* Actions Column */
+                text-align: center;
+            }
+        </style>
+        <script>
+            function init() {
+                // Add action handlers
+                document.querySelectorAll("img[action]").forEach((element) => {
+                    element.addEventListener('click', (event) => {
+                        const tag = event.target.getAttribute('tag');
+                        const action = event.target.getAttribute('action');
+                        if(action == 'delete') {
+                            const elem = document.getElementById('delete-name');
+                            elem.value = tag;
+                            elem.focus();
+                        } else if (action == 'rename') {
+                            const elem = document.getElementById('rename-name');
+                            elem.value = tag;
+                            elem.focus();
+                        } else {
+                            console.warn(`Unknown action ${action} on element ${event.target}`);
+                        }
+                    })
+                });
+            }
+            document.addEventListener('DOMContentLoaded', init);
+        </script>
+    </head>
+    <body class="standard-layout">
+        <div class="header">
+            {% include 'widgets/header.html' %}
+        </div>
+        <div class="sidebar">
+            {% include 'widgets/search.html' %}
+        </div>
+        <div class="content">
+            {% include 'widgets/messages.html' %}
+            <div class="quick-actions">
+                <fieldset>
+                    <legend>Create a Tag</legend>
+                    <form class="solid-vertical">
+                        <input name="tag" placeholder="Name">
+                        <input type="hidden" name="action" value="create">
+                        <input id='create-tag' type="submit" value="Create">
+                    </form>
+                </fieldset>
+                <fieldset>
+                    <legend>Delete a Tag</legend>
+                    <form class="solid-vertical">
+                        <input id="delete-name" name="tag" placeholder="Name">
+                        <input name="new_tag" placeholder="Replace With (Optional)">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="submit" value="Delete">
+                    </form>
+                </fieldset>
+                <fieldset>
+                    <legend>Rename a Tag</legend>
+                    <form class="solid-vertical">
+                        <input id="rename-name" name="tag" placeholder="Old Name">
+                        <input name="new_tag" placeholder="New Name">
+                        <input type="hidden" name="action" value="rename">
+                        <input type="submit" value="Rename">
+                    </form>
+                </fieldset>
+            </div>
+            <div class="tags">
+                <table class="tag-table">
+                    <thead>
+                        <tr>
+                            <td>ID</td>
+                            <td>Tag</td>
+                            <td>Count</td>
+                            <td>Actions</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tag in tags %}
+                            <tr>
+                                <td>{{tag.id}}</td>
+                                <td>{{tag.name}}</td>
+                                <td>{{tag.post_count}}</td>
+                                <td>
+                                    <img action="delete" tag={{tag.name}} src="/static/icons/coolicons/trash-full.svg">
+                                    <img action="rename" tag={{tag.name}} src="/static/icons/coolicons/edit-pencil.svg">
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="footer">
+            {% include 'widgets/footer.html' %}
+        </div>
+    </body>
+</html>
