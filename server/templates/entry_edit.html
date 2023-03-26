@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Library - Third Party Credits</title>
+        <link rel="stylesheet" href="/static/style.css"/>
+        <script src="/static/temporal-polyfill.js"></script>
+        <style>
+            .content {
+                display: flex;
+                flex-direction: column;
+                gap: 2mm;
+            }
+            form.edit_form {
+                display: flex;
+                flex-direction: column;
+                gap: 2mm;
+            }
+            form.edit_form>input,
+            form.edit_form>textarea {
+                border-radius: 1mm;
+                border: 1px solid var(--border-primary);
+            }
+            .dateTimeInput {
+                display: flex;
+                flex-direction: row;
+            }
+            .dateTimeInput input {
+                border: 1px solid var(--border-primary);
+                border-right: none;
+                border-radius: 1mm 0 0 1mm;
+            }
+            .dateTimeInput select {
+                border: 1px solid var(--border-primary);
+                border-right: none;
+                border-radius: 0;
+            }
+            .dateTimeInput button {
+                border: 1px solid var(--border-primary);
+                border-radius: 0 1mm 1mm 0;;
+            }
+        </style>
+        <script>
+            function init() {
+                // Replace date picker inputs with locale-aware equivalents.
+                document.querySelectorAll("input[isDate]").forEach((elem) => {
+                    // Create elements 
+                    const t_date = `${elem.value}[${elem.value.slice(19,elem.value.length)}]`;
+                    const in_temporal = Temporal.ZonedDateTime.from(t_date);
+                    const container = document.createElement("div");
+                    container.className = "dateTimeInput";
+                    const picker = document.createElement("input");
+                    const timezone = document.createElement("select");
+                    const now_button = document.createElement("button");
+                    // Update function
+                    function update() {
+                        const plain_dt = Temporal.PlainDateTime.from(picker.value);
+                        const time_zone = Temporal.TimeZone.from(timezone.options[timezone.selectedIndex].value);
+                        const date_time = plain_dt.toZonedDateTime(time_zone);
+                        const iso8601 = date_time.toString({'timeZoneName':'never'});
+                        elem.value = iso8601;
+                    }
+                    // Define picker
+                    picker.type = "datetime-local";
+                    picker.step = "1";
+                    picker.addEventListener("change", update);
+                    picker.value = in_temporal.toString({'offset':'never','timeZoneName':'never'})
+                    // Define timezone
+                    timezone.addEventListener("change", update);
+                    for(let i = -11.5; i <=12; i += 0.5) {
+                        const offset = i * 3600;
+                        const hours = String(Math.abs(Math.trunc(i))).padStart(2, '0');
+                        const minutes = String(Math.abs((i % 1) * 60)).padStart(2, '0');
+                        const option = document.createElement("option");
+                        const sign = i >= 0 ? '+' : '-';
+                        option.innerText = `UTC${sign}${hours}:${minutes}`;
+                        option.value = `${sign}${hours}:${minutes}`;
+                        timezone.append(option);
+                        const tzOffset = in_temporal.timeZone.getOffsetNanosecondsFor(Temporal.Instant.fromEpochSeconds(0))/1000000000;
+                        if(offset == tzOffset) {
+                            option.selected = true;
+                        }
+                    }
+                    // Define "now" button
+                    now_button.innerText = "Now";
+                    now_button.type = "button";
+                    now_button.addEventListener("click", () => {
+                        const now = Temporal.Now.zonedDateTimeISO().round('second');
+                        picker.value = now.toString({'offset':'never','timeZoneName':'never'});
+                        const offset = now.getISOFields()['offset'];
+                        for(const e of timezone.childNodes) {
+                            e.selected = e.value == offset;
+                        }
+                        update();
+                    });
+                    
+
+                    container.append(picker);
+                    container.append(timezone);
+                    container.append(now_button);
+                    elem.after(container);
+                    elem.style.display = "none";
+                });
+            }
+            document.addEventListener("DOMContentLoaded", init);
+        </script>
+    </head>
+    <body class="standard-layout">
+        <div class="header">
+            {% include 'widgets/header.html' %}
+        </div>
+        <div class="sidebar">
+            {% include 'widgets/search.html' %}
+        </div>
+        <div class="content">
+            {% include 'widgets/messages.html' %}
+            <form class="edit_form" method="post">
+                Entry Title:
+                <input name="item_name" value="{{stale_error.item_name or entry.item_name}}"/>
+                Storage ID:
+                <input name="storage_id" value="{{stale_error.storage_id or entry.storage_id}}"/>
+                Tags:
+                <textarea name="tags">{{stale_error.tags or ' '.join(entry.tags)}}</textarea>
+                Description:
+                <textarea name="description">{{stale_error.description or entry.description or ''}}</textarea>
+                Transcription:
+                <textarea name="transcription">{{stale_error.transcription or entry.transcription or ''}}</textarea>
+                Date Created:
+                <input isDate name="date_created" value="{{stale_error.date_created or entry.date_created.isoformat()}}"/>
+                Date Digitized:
+                <input isDate name="date_digitized" value="{{stale_error.date_digitized or entry.date_digitized.isoformat()}}"/>
+                Location:
+                <input name="location" value="{{stale_error.location or entry.location or ''}}"/>
+                <input type="submit" value="Save Changes"/>
+            </form>
+        </div>
+        <div class="footer">
+            {% include 'widgets/footer.html' %}
+        </div>
+    </body>
+</html>

@@ -11,6 +11,7 @@ from database import Database
 import server
 from util import formatting
 from markdown2 import Markdown  # type: ignore
+from werkzeug.wrappers import Response as WerkzeugResponse
 
 validator = Validator(raise_exception=True)
 markdowner = Markdown()
@@ -103,13 +104,16 @@ def withDatabase(function: Callable[Concatenate[Database, P], R]) -> Callable[P,
 
 FullTuple = tuple[str, dict[str, Any] | TypedDict, int]
 PartialTuple = tuple[str, dict[str, Any] | TypedDict]
-TemplateFunc = Callable[P, PartialTuple | FullTuple]
+# Required because flask's response object isn't 100% compatible with the internal Werkzeug response
+GeneralResponse = Response | WerkzeugResponse
+TemplateFuncReturnType = PartialTuple | FullTuple | GeneralResponse
+TemplateFunc = Callable[P, TemplateFuncReturnType]
 
 
-def templateWrapper(function: TemplateFunc[P]) -> Callable[P, Response]:
+def templateWrapper(function: TemplateFunc[P]) -> Callable[P, GeneralResponse]:
     """
     Wrapper for `render_template` that includes some useful additional values shared between many
-    pages.
+    pages. If the wrapped function returns a response object, it will be passed through unmodified.
     """
     def expand(input: PartialTuple | FullTuple) -> FullTuple:
         """
@@ -120,7 +124,10 @@ def templateWrapper(function: TemplateFunc[P]) -> Callable[P, Response]:
     @wraps(function)
     def wrapper(*args: P.args, **kwargs: P.kwargs):
         timer = Timer()
-        template_name, params, status = expand(function(*args, **kwargs))
+        raw_response = function(*args, **kwargs)
+        if isinstance(raw_response, Response) or isinstance(raw_response, WerkzeugResponse):
+            return raw_response
+        template_name, params, status = expand(raw_response)
         params = cast(dict[str, Any], params)  # Strip away any special typing information
         params['query_time'] = timer.time_formatted()
         params['formatting'] = formatting

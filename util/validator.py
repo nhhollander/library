@@ -1,4 +1,5 @@
 from typing import Any, cast, get_args
+from types import UnionType
 from typing_extensions import TypedDict
 
 from .plural import plural
@@ -6,11 +7,14 @@ from .plural import plural
 
 class ValidationException(Exception):
 
-    def __init__(self, path: list[str], detail: str):
+    def __init__(self, path: list[str], detail: str, misc: Any = None):
         self.message = f"Validation error at /{'/'.join(path)}: {detail}"
+        if misc:
+            self.message += f" {misc}"
         self.path = path
         self.detail = detail
-        self.args = (self.message, path, detail)
+        self.misc = misc
+        self.args = (self.message, path, detail, misc)
 
 
 class Validator:
@@ -18,12 +22,12 @@ class Validator:
     def __init__(self, raise_exception: bool = False):
         self.__raise_exception = raise_exception
 
-    def __error(self, path: list[str], detail: str):
+    def __error(self, path: list[str], detail: str, misc: Any = None):
         """
         Validation failure wrapper.
         """
         if self.__raise_exception:
-            raise ValidationException(path, detail)
+            raise ValidationException(path, detail, misc)
         return False
 
     def validate(self, obj: object, t: type, __path: list[str] = []) -> bool:
@@ -42,6 +46,10 @@ class Validator:
         :param __path: Validation path used for internal error reporting.
         :returns: True/False, unless `raise_exception` is set.
         """
+        # Unions require special handling because they can fail on one branch but still succeed
+        if isinstance(t, UnionType):
+            return self.__validate_Union(obj, t, __path)
+
         # Gather initial information about type and object
         type_is_typed_dict = hasattr(t, '__required_keys__')
         type_is_generic_type = hasattr(t, '__args__')
@@ -113,6 +121,26 @@ class Validator:
                                         f"got {len(obj_cast)}")
         enumerator = enumerate(type_generic_args)
         return all([self.validate(obj_cast[i], t, __path + [str(i)]) for i, t in enumerator])
+
+    def __validate_Union(self, obj: Any, t: type, __path: list[str]):
+        """
+        Special validation handler for unions. This function exists because a union can have one or
+        more acceptable branches fail, but overall the check must pass as long as at least one of
+        them is valid.
+        """
+        print("union", get_args(t))
+        exceptions: list[ValidationException] = []
+        for u_type in get_args(t):
+            try:
+                name = f"[U:{u_type.__name__}]"
+                if self.validate(obj, u_type, __path + [name]):
+                    return True
+            except ValidationException as e:
+                exceptions.append(e)
+        type_strings = [str(type.__name__) for type in get_args(t)]
+        got_type = str(type(object).__name__)
+        detail = f"Type {got_type} not valid for any of {type_strings}"
+        return self.__error(__path, f"Union validation failure: {detail}", exceptions)
 
     # ======================== #
     #  Standard type handlers  #

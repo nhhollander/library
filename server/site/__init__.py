@@ -5,15 +5,17 @@ from server.helpers import exceptionWrapper, args, templateWrapper, withDatabase
 from server.helpers import StandardRenderParams, Warning, Err
 from typing_extensions import TypedDict, NotRequired
 from database import searchStringParser, Database
-from util import mime
 
 from .credits import credits
 from .tags import tags
+from .entry import entry, edit_entry
 
 site = Blueprint('site', __name__)
 
 site.add_url_rule('/credits', '/credits', credits)
 site.add_url_rule('/tags', '/tags', tags)
+site.add_url_rule('/entry', '/entry', entry)
+site.add_url_rule('/editEntry', '/editEntry', edit_entry, methods=['GET', 'POST'])
 
 
 @site.route("/")
@@ -65,41 +67,3 @@ def search(db: Database, args: SearchArgs):
 class EntryArgs(TypedDict):
     id: str
     q: NotRequired[str]
-
-
-@site.route("/entry")
-@exceptionWrapper
-@args(EntryArgs)
-@withDatabase
-@templateWrapper
-def entry(db: Database, args: EntryArgs):
-    class Params(StandardRenderParams):
-        entry: Entry | None
-        native: bool
-    render_params: Params = {
-        'query': args.get('q') or '',
-        'messages': [],
-        'entry': None,
-        'native': False
-    }
-
-    try:
-        id = int(args['id'])
-    except Exception as e:
-        render_params['messages'].append(Err(f"Invalid Entry ID: {e.args[0]}"))
-        return 'entry.html', render_params, 400
-
-    render_params['entry'] = db.get_entry_by_id(id)
-    if not render_params['entry']:
-        render_params['messages'].append(Err(f"Entry {id} not found"))
-        return 'entry.html', render_params, 404
-    if not render_params['entry'].storage_id:
-        render_params['messages'].append(Err(f"Entry {id} has no associated media"))
-        return 'entry.html', render_params
-    render_params['native'] = mime.is_browser_compatible(render_params['entry'].mime_type or '')
-    if not render_params['native']:
-        render_params['messages'].append(
-            Err(f"Entry {id} (type {render_params['entry'].mime_type}) can not be displayed "
-                "in-browser"))
-
-    return 'entry.html', render_params

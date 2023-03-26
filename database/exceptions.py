@@ -24,6 +24,6 @@ class TagDoesNotExistException(DatabaseException):
 class InvalidTagException(DatabaseException):
 
     def __init__(self, tags: list[str]):
-        self.message = f"Invalid tag{'s' if len(tags) > 0 else ''}: {tags}"
+        self.message = f"Invalid tag{'s' if len(tags) > 1 else ''}: {tags}"
         self.tags = tags
         self.args = (self.message, tags)

@@ -1,4 +1,5 @@
 from typing_extensions import TypedDict, NotRequired
+from datetime import datetime
 
 
 class SearchParameters(TypedDict):
@@ -39,8 +40,8 @@ class EntryUpdateParams(TypedDict):
     item_name: NotRequired[str]
     storage_id: NotRequired[str]
     tags: NotRequired[list[str]]
-    description: NotRequired[str]
-    transcription: NotRequired[str]
-    date_created: NotRequired[int]
-    date_digitized: NotRequired[int]
-    location: NotRequired[str]
+    description: NotRequired[str | None]
+    transcription: NotRequired[str | None]
+    date_created: NotRequired[datetime | str]
+    date_digitized: NotRequired[datetime | str]
+    location: NotRequired[str | None]

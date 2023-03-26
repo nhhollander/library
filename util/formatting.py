@@ -19,4 +19,4 @@ def timestamp_friendly(dt: datetime):
     """
     Converts a datetime (with timezone information) into a friendly timestamp.
     """
-    return dt.strftime("%Y-%M-%d %H:%M:%S %Z")
+    return dt.strftime("%Y-%m-%d %H:%M:%S %z")

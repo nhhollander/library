@@ -11,10 +11,13 @@ from .db_utils import decode_tags, get_tag_ids, get_tag_id, encode_tags
 from magic import Magic
 from pathlib import Path
 import config
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from util import mime
+from dateutil import parser
+from calendar import timegm
 
-import time
+
+__shared_parser = parser.parser()
 
 
 class Entry(Base):
@@ -25,10 +28,12 @@ class Entry(Base):
     tags_raw: Mapped[bytes] = mapped_column(default=b'')
     description:  Mapped[str | None] = mapped_column(nullable=True)
     transcription: Mapped[str | None] = mapped_column(nullable=True)
-    date_created_raw: Mapped[float] = mapped_column(name='date_created')
-    date_digitized_raw: Mapped[float] = mapped_column(name='date_digitized')
-    date_indexed_raw: Mapped[float] = mapped_column(name='date_indexed')
-    date_modified_raw: Mapped[float] = mapped_column(name='date_modified')
+    date_created_raw: Mapped[int] = mapped_column(name='date_created')
+    __date_created_tz: Mapped[int] = mapped_column(name='date_created_tz', default=0)
+    date_digitized_raw: Mapped[int] = mapped_column(name='date_digitized')
+    __date_digitized_tz: Mapped[int] = mapped_column(name='date_digitized_tz', default=0)
+    date_indexed_raw: Mapped[int] = mapped_column(name='date_indexed')
+    date_modified_raw: Mapped[int] = mapped_column(name='date_modified')
     location: Mapped[str | None] = mapped_column(nullable=True)
     __mime_type: Mapped[str | None] = mapped_column(nullable=True, name='mime_type')
     __mime_icon: Mapped[str | None] = mapped_column(nullable=True, name='mime_icon')
@@ -89,13 +94,17 @@ class Entry(Base):
         """Get the mime icon name for this entry."""
         # Validate request
         if self.__mime_icon:
+            print(f"Mime icon for {self.id} is {self.__mime_icon}")
             return self.__mime_icon
-        if not self.__mime_type:
+        if not self.mime_type:
+            print(f"No mime icon for {self.id}")
             return None
         # Identify icon
-        icon = mime.find_icon_name(self.__mime_type)
+        print(f"Looking up icon for {self.id} with type {self.__mime_type}")
+        icon = mime.find_icon_name(self.mime_type)
         if not icon:
             return None
+        self.__mime_icon = icon
         return self.__mime_icon
 
     @property
@@ -137,35 +146,35 @@ class Entry(Base):
 
     @property
     def date_created(self):
-        return self.__dt_from_unix(self.date_created_raw)
+        return self.__dt_from_unix(self.date_created_raw, self.__date_created_tz)
 
     @date_created.setter
     def date_created(self, dt: datetime | str):
-        self.date_created_raw = self.__dt_to_unix(dt)
+        self.date_created_raw, self.__date_created_tz = self.__dt_to_unix(dt)
 
     @property
     def date_digitized(self):
-        return self.__dt_from_unix(self.date_digitized_raw)
+        return self.__dt_from_unix(self.date_digitized_raw, self.__date_digitized_tz)
 
     @date_digitized.setter
     def date_digitized(self, dt: datetime | str):
-        self.date_digitized_raw = self.__dt_to_unix(dt)
+        self.date_digitized_raw, self.__date_digitized_tz = self.__dt_to_unix(dt)
 
     @property
     def date_indexed(self):
-        return self.__dt_from_unix(self.date_indexed_raw)
+        return self.__dt_from_unix(self.date_indexed_raw, 0)
 
     @date_indexed.setter
     def date_indexed(self, dt: datetime | str):
-        self.date_indexed_raw = self.__dt_to_unix(dt)
+        self.date_indexed_raw, _ = self.__dt_to_unix(dt)
 
     @property
     def date_modified(self):
-        return self.__dt_from_unix(self.date_modified_raw)
+        return self.__dt_from_unix(self.date_modified_raw, 0)
 
     @date_modified.setter
     def date_modified(self, dt: datetime | str):
-        self.date_modified_raw = self.__dt_to_unix(dt)
+        self.date_modified_raw, _ = self.__dt_to_unix(dt)
 
     # ================ #
     # Internal Helpers #
@@ -183,15 +192,22 @@ class Entry(Base):
             raise Exception("Unable to get session from orphaned entity")
         return session
 
-    def __dt_to_unix(self, dt: datetime | str):
+    def __dt_to_unix(self, dt: datetime | str) -> tuple[int, int]:
         """Convert a datetime object into a utc timestamp and timezone offset value."""
         if isinstance(dt, str):
-            dt = datetime.strptime(dt, "%Y-%m-%d %H:%M:%S %z")
-        return time.mktime(dt.timetuple())
+            dt = __shared_parser.parse(dt)
+        offset: int = 0
+        if dt.tzinfo:
+            tz = dt.tzinfo.utcoffset(None)
+            if tz:
+                offset = int(tz.total_seconds())
+        return timegm(dt.utctimetuple()), offset
 
-    def __dt_from_unix(self, unix_time: float):
+    def __dt_from_unix(self, unix_time: int, tz_offset: int):
         """Convert a unix timestamp and timezone offset into a datetime object."""
-        return datetime.fromtimestamp(unix_time).astimezone()
+        print(f"Value is {tz_offset}")
+        tz = timezone(timedelta(seconds=tz_offset))
+        return datetime.fromtimestamp(unix_time, tz=tz)
 
     # ================ #
     # External Helpers #
@@ -248,9 +264,11 @@ class Entry(Base):
 
         try:
             # Apply direct updates
-            for field in getattr(params, '__required_keys__'):
+            for field in getattr(EntryUpdateParams, '__optional_keys__'):
                 if field in params:
-                    setattr(self, field, getattr(params, field))
+                    # Avoid triggering update actions unnecessarily
+                    if not getattr(self, field) == params[field]:
+                        setattr(self, field, params[field])
         except Exception as e:
             # If any exception is encountered roll back the changes we just made
             self.__session.rollback()
