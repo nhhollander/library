@@ -86,7 +86,9 @@ class Entry(Base):
             return None
         # Identify MIME
         magic = Magic(mime=True)
+        nested = self.__session.begin_nested()
         self.__mime_type = magic.from_file(path)
+        nested.commit()
         return self.__mime_type
 
     @property
@@ -104,7 +106,9 @@ class Entry(Base):
         icon = mime.find_icon_name(self.mime_type)
         if not icon:
             return None
+        nested = self.__session.begin_nested()
         self.__mime_icon = icon
+        nested.commit()
         return self.__mime_icon
 
     @property
@@ -141,7 +145,9 @@ class Entry(Base):
         if not path:
             return None
         size = path.stat().st_size
+        nested = self.__session.begin_nested()
         self.__size = size
+        nested.commit()
         return size
 
     @property
