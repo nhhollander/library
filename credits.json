@@ -12,6 +12,12 @@
             "author": "Kryston Schwarze",
             "license": "CC-BY-4.0",
             "url": "https://coolicons.cool/"
+        },
+        {
+            "name": "Clarity",
+            "author": "VMWare",
+            "license": "MIT",
+            "url": "https://clarity.design/"
         }
     ]
 }

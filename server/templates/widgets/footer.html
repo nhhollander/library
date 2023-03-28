@@ -1,3 +1,6 @@
 {% if query_time %}
-<span class="segment">Query took {{query_time}}</span>
+<span class="segment"><img src="/static/icons/clarity/clock.svg"/>{{query_time}}</span>
+<span class="segment"><img src="/static/icons/clarity/hard-drive.svg"/>{{total_data}}</span>
+<span class="segment"><img src="/static/icons/clarity/hashtag-solid.svg"/>{{entry_count}}</span>
+<span class="segment"><img src="/static/icons/clarity/storage-line.svg"/>{{db_size}}</span>
 {% endif %}

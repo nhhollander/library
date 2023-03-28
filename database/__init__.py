@@ -3,6 +3,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker, Session
 from sqlalchemy.exc import NoResultFound
 
 from typing import ParamSpec, TypeVar
+from database.dbstat import DBStat
 
 from database.exceptions import InvalidTagException, TagDoesNotExistException, TagExistsException
 from util.timer import Timer
@@ -86,6 +87,30 @@ class Database:
     @property
     def __session(self):
         return self.__scoped_session()
+
+    def total_size(self):
+        """
+        Return the total size in bytes of all entries in the engine. This will not trigger a size
+        re-calculation for entries which do not have this value cached.
+        """
+        return sum([x[0] for x in self.__session.query(Entry.size_raw).all()])
+
+    def entry_count(self):
+        """
+        Return the number of entries tracked in the database.
+        """
+        return self.__session.query(Entry.id).count()
+
+    def database_size(self):
+        """
+        Get the number of bytes used by the database.
+
+        Note: It is possible that the actual database could be larger than the size reported by
+        this method because of extraneous data which has not yet been discarded by a `VACUUM`
+        command.
+        """
+        dbstat_tables = self.__session.query(DBStat.pgsize).all()
+        return sum([x[0] for x in dbstat_tables])
 
     # ================= #
     #  Query Functions  #

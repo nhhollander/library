@@ -169,3 +169,24 @@ div.messages>div.message.error {
 div.messages>div.message.success {
     background-color: #00b900;
 }
+
+.footer {
+    display: flex;
+    gap: 1.5mm;
+}
+.footer>.segment {
+    padding: 1mm;
+    display: flex;
+    gap: 1mm;
+}
+.footer>.segment>* {
+    vertical-align: middle;
+}
+.footer>.segment>img {
+    height: 5mm;
+}
+@media (prefers-color-scheme: dark) {
+    .footer>.segment>img {
+        filter: invert()
+    }
+}

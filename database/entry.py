@@ -37,7 +37,7 @@ class Entry(Base):
     location: Mapped[str | None] = mapped_column(nullable=True)
     __mime_type: Mapped[str | None] = mapped_column(nullable=True, name='mime_type')
     __mime_icon: Mapped[str | None] = mapped_column(nullable=True, name='mime_icon')
-    __size: Mapped[int | None] = mapped_column(nullable=True, name='size')
+    size_raw: Mapped[int | None] = mapped_column(nullable=True, name='size')
 
     def __init__(self, **kw: dict[str, Any]):
         """
@@ -70,7 +70,7 @@ class Entry(Base):
         self.__storage_id = value
         self.__mime_type = None
         self.__mime_icon = None
-        self.__size = None
+        self.size_raw = None
 
     @property
     def mime_type(self):
@@ -139,14 +139,14 @@ class Entry(Base):
     @property
     def size(self):
         """Get the size of the item in bytes."""
-        if self.__size:
-            return self.__size
+        if self.size_raw:
+            return self.size_raw
         path = self.storage_path()
         if not path:
             return None
         size = path.stat().st_size
         nested = self.__session.begin_nested()
-        self.__size = size
+        self.size_raw = size
         nested.commit()
         return size
 
@@ -211,7 +211,6 @@ class Entry(Base):
 
     def __dt_from_unix(self, unix_time: int, tz_offset: int):
         """Convert a unix timestamp and timezone offset into a datetime object."""
-        print(f"Value is {tz_offset}")
         tz = timezone(timedelta(seconds=tz_offset))
         return datetime.fromtimestamp(unix_time, tz=tz)
 

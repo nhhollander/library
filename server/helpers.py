@@ -110,6 +110,15 @@ TemplateFuncReturnType = PartialTuple | FullTuple | GeneralResponse
 TemplateFunc = Callable[P, TemplateFuncReturnType]
 
 
+class AdditionalTemplateFields(TypedDict):
+    query_time: str
+    total_data: str
+    entry_count: str
+    db_size: str
+    formatting: Any  # Module type?
+    markdown: Callable[[Any], Any]
+
+
 def templateWrapper(function: TemplateFunc[P]) -> Callable[P, GeneralResponse]:
     """
     Wrapper for `render_template` that includes some useful additional values shared between many
@@ -127,9 +136,15 @@ def templateWrapper(function: TemplateFunc[P]) -> Callable[P, GeneralResponse]:
         raw_response = function(*args, **kwargs)
         if isinstance(raw_response, Response) or isinstance(raw_response, WerkzeugResponse):
             return raw_response
+
         template_name, params, status = expand(raw_response)
-        params = cast(dict[str, Any], params)  # Strip away any special typing information
+        # Strip away typing information to populate the following special fields
+        db = server.get_db_internal()
+        params = cast(AdditionalTemplateFields, params)  # Strip away any special typing information
         params['query_time'] = timer.time_formatted()
+        params['total_data'] = formatting.file_size(db.total_size())
+        params['entry_count'] = f"{db.entry_count():,}"
+        params['db_size'] = formatting.file_size(db.database_size())
         params['formatting'] = formatting
         params['markdown'] = markdowner.convert
         resp = Response(render_template(template_name, **params))
