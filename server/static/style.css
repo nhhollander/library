@@ -10,15 +10,51 @@ html {
     --fg-primary: black;
     --bg-primary: white;
     --bg-secondary: #FAFAFA;
+    --bg-secondary-hover: #E9E9E9;
     --border-primary: #ABABAB;
     --shadow-primary: rgba(0, 0, 0, .15);
 
     height: 100%;
+    color: var(--fg-primary);
+    background-color: var(--bg-primary);
+}
+
+/* Dark */
+@media (prefers-color-scheme: dark) {
+    html {
+        --fg-primary: white;
+        --fg-secondary: #D0D0D0;
+        --bg-primary: #202020;
+        --bg-secondary: #303030;
+        --bg-secondary-hover: #404040;
+        --border-primary: #505050;
+        --shadow-primary: rgba(0, 0, 0, .5);
+    }
 }
 
 fieldset {
     border: 1px solid var(--border-primary);
     border-radius: 1mm;
+}
+
+input, textarea {
+    color: var(--fg-primary);
+    background-color: var(--bg-primary);
+}
+button,
+select,
+input[type="submit"] {
+    color: var(--fg-primary);
+    background-color: var(--bg-secondary);
+    cursor: pointer;
+}
+button:hover,
+select:hover,
+input[type="submit"]:hover {
+    background-color: var(--bg-secondary-hover);
+}
+a {
+    color: var(--fg-secondary);
 }
 
 /****************************/

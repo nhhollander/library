@@ -1,5 +1,6 @@
 from flask import Blueprint
 from database.types import EntryUpdateParams
+from database.entry import Entry
 from server.helpers import exceptionWrapper, withDatabase
 from database import Database
 
@@ -54,3 +55,10 @@ def createEntries(db: Database):
         e = db.create_entry()
         e.update_safe(definition)
     return "Success"
+
+
+@debug_api.route("/foo")
+@exceptionWrapper
+@withDatabase
+def foo(db: Database): 
+    db.foo_foo_foo().query(Entry.tags_raw).where(Entry.id == 7).one()

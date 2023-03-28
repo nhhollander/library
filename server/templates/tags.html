@@ -14,13 +14,14 @@
             .quick-actions {
                 display: flex;
             }
-            fieldset {
-                border: 1px solid var(--border-primary);
-                border-radius: 1mm;
-            }
             img.icon {
                 height: 5mm;
                 cursor: pointer;
+            }
+            @media (prefers-color-scheme: dark) {
+                img.icon {
+                    filter: invert()
+                }
             }
             table.tag-table {
                 border: 1px solid var(--border-primary);
@@ -30,9 +31,11 @@
                 border: 1px solid var(--border-primary);
                 padding: 1mm;
                 line-height: 5mm;
-                vertical-align: center;
             }
-            table.tab-table>thead td {
+            table.tag-table td>* {
+                vertical-align: middle;
+            }
+            table.tag-table>thead td {
                 text-align: center;
                 font-weight: bold;
             }
