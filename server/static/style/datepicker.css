@@ -1,0 +1,18 @@
+/* Style for the DateTimePicker (date-time-picker) WebComponent */
+
+.container {
+    display: flex;
+    flex-direction: row;
+}
+.container>* {
+    border: 1px solid var(--border-primary);
+}
+.container>*:not(:last-child) {
+    border-right: none;
+}
+.container>*:first-child {
+    border-radius: 1mm 0 0 1mm;
+}
+.container>*:last-child {
+    border-radius: 0 1mm 1mm 0;
+}

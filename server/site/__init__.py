@@ -9,6 +9,7 @@ from database import searchStringParser, Database
 from .credits import credits
 from .tags import tags
 from .entry import entry, edit_entry
+from .upload import upload
 
 site = Blueprint('site', __name__)
 
@@ -16,6 +17,7 @@ site.add_url_rule('/credits', '/credits', credits)
 site.add_url_rule('/tags', '/tags', tags)
 site.add_url_rule('/entry', '/entry', entry)
 site.add_url_rule('/editEntry', '/editEntry', edit_entry, methods=['GET', 'POST'])
+site.add_url_rule('/upload', '/upload', upload, methods=['GET', 'POST'])
 
 
 @site.route("/")

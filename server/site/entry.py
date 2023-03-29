@@ -133,6 +133,8 @@ def handle_entry_update(db: Database, entry: Entry) -> Message | None:
         return Err(e.message)
     except ValidationException as e:
         return Err(e.message)
+    except Exception as e:
+        return Err(f"Uncaught exception of type {type(e).__name__}: {e}")
 
     try:
         entry.update_safe(new_data)

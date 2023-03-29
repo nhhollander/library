@@ -15,6 +15,7 @@ from datetime import datetime, timezone, timedelta
 from util import mime
 from dateutil import parser
 from calendar import timegm
+import traceback
 
 
 __shared_parser = parser.parser()
@@ -53,6 +54,7 @@ class Entry(Base):
         default('date_digitized', datetime.now())
         default('date_indexed', datetime.now())
         default('date_modified', datetime.now())
+        default('tags_raw', b'')
         super().__init__(**kw)
 
     # =================== #
@@ -85,11 +87,15 @@ class Entry(Base):
         if not path:
             return None
         # Identify MIME
-        magic = Magic(mime=True)
-        nested = self.__session.begin_nested()
-        self.__mime_type = magic.from_file(path)
-        nested.commit()
-        return self.__mime_type
+        try:
+            magic = Magic(mime=True)
+            nested = self.__session.begin_nested()
+            self.__mime_type = magic.from_file(path)
+            nested.commit()
+            return self.__mime_type
+        except FileNotFoundError as e:
+            traceback.print_exception(e)
+            return ""
 
     @property
     def mime_icon(self):
@@ -144,11 +150,15 @@ class Entry(Base):
         path = self.storage_path()
         if not path:
             return None
-        size = path.stat().st_size
-        nested = self.__session.begin_nested()
-        self.size_raw = size
-        nested.commit()
-        return size
+        try:
+            size = path.stat().st_size
+            nested = self.__session.begin_nested()
+            self.size_raw = size
+            nested.commit()
+            return size
+        except Exception as e:
+            traceback.print_exception(e)
+            return 0
 
     @property
     def date_created(self):

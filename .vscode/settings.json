@@ -1,8 +1,10 @@
 {
     "cSpell.words": [
         "CHECKTAGS",
+        "datetime",
         "dateutil",
         "dbapi",
+        "dbstat",
         "dtype",
         "frombuffer",
         "gettz",
@@ -10,6 +12,7 @@
         "jsonify",
         "markdowner",
         "mktime",
+        "pgsize",
         "pyxdg",
         "rowid",
         "sessionmaker",

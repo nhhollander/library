@@ -38,21 +38,21 @@
             {% include 'widgets/messages.html' %}
             <form class="edit_form" method="post">
                 Entry Title:
-                <input name="item_name" value="{{stale_error.item_name or entry.item_name}}"/>
+                <input name="item_name" value="{{stale_error.item_name or ''}}"/>
                 Storage ID:
-                <input name="storage_id" value="{{stale_error.storage_id or entry.storage_id}}"/>
+                <input name="storage_id" value="{{stale_error.storage_id or ''}}"/>
                 Tags:
-                <textarea name="tags">{{stale_error.tags or ' '.join(entry.tags)}}</textarea>
+                <textarea name="tags">{{stale_error.tags or ''}}</textarea>
                 Description:
-                <textarea name="description">{{stale_error.description or entry.description or ''}}</textarea>
+                <textarea name="description">{{stale_error.description or ''}}</textarea>
                 Transcription:
-                <textarea name="transcription">{{stale_error.transcription or entry.transcription or ''}}</textarea>
+                <textarea name="transcription">{{stale_error.transcription or ''}}</textarea>
                 Date Created:
-                <date-time-picker name="date_created" value="{{stale_error.date_created or entry.date_created.isoformat()}}"></date-time-picker>
+                <date-time-picker name="date_created" value="{{stale_error.date_created or ''}}"></date-time-picker>
                 Date Digitized:
-                <date-time-picker name="date_digitized" copy_from="date_created" copy_from_label="Date Created" value="{{stale_error.date_digitized or entry.date_digitized.isoformat()}}"></date-time-picker>
+                <date-time-picker name="date_digitized" copy_from="date_created" copy_from_label="Date Created" value="{{stale_error.date_Digitized or ''}}"></date-time-picker>
                 Location:
-                <input name="location" value="{{stale_error.location or entry.location or ''}}"/>
+                <input name="location" value="{{stale_error.location or ''}}"/>
                 <input type="submit" value="Save Changes"/>
             </form>
         </div>

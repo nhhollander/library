@@ -59,12 +59,12 @@ class Database:
     # =================== #
 
     def commit(self):
-        """
-        Write changes to the database.
-
-        Consider performance implications before calling this function.
-        """
+        """Write changes to the database."""
         self.__session.commit()
+
+    def rollback(self):
+        """Abandon all pending changes."""
+        self.__session.rollback()
 
     def release(self):
         """
@@ -93,7 +93,7 @@ class Database:
         Return the total size in bytes of all entries in the engine. This will not trigger a size
         re-calculation for entries which do not have this value cached.
         """
-        return sum([x[0] for x in self.__session.query(Entry.size_raw).all()])
+        return sum([x[0] or 0 for x in self.__session.query(Entry.size_raw).all()])
 
     def entry_count(self):
         """
@@ -295,7 +295,6 @@ class Database:
         """
         entry = Entry()
         self.__session.add(entry)
-        self.commit()
         return entry
 
     def destroy_entry(self, entry: Entry):
