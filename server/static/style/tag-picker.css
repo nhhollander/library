@@ -1,0 +1,23 @@
+/* Style for the TagPicker (tag-picker) WebComponent */
+
+input {
+    border: 1px solid var(--border-primary);
+    border-radius: 0;
+    
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.tag_list {
+    position: relative;
+    background-color: var(--bg-secondary);
+    width: 100%;
+    padding: 1mm;
+    box-sizing: border-box;
+    border: 1px solid var(--border-primary);
+    border-top: none;
+    box-shadow: 1mm 1mm 1mm var(--shadow-primary);
+}
+.tag_list>.selected {
+    background-color: var(--bg-secondary-hover);
+}

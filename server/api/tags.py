@@ -15,7 +15,7 @@ tag_api = Blueprint('tag_api', __name__, url_prefix='/tags')
 @exceptionWrapper
 @withDatabase
 def listTags(db: Database):
-    return success([(x.name, x.post_count) for x in db.get_all_tags()])
+    return success([x.as_object() for x in db.get_all_tags()])
 
 
 GenericDict = TypeVar('GenericDict', bound=TypedDict)

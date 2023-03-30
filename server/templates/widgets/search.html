@@ -1,4 +1,6 @@
+<script src="/static/scripts/tag-picker.js"></script>
 <form class="search-widget" action="/search">
-    <input name="q" value="{{query or ''}}">
+    <!--<input name="q" value="{{query or ''}}">-->
+    <tag-picker name="q"></tag-picker>
     <input type="submit" value="Search"> 
 </form>

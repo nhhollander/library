@@ -4,10 +4,6 @@ class DateTimePicker extends HTMLElement {
         return ['value', 'name', 'copy_from', 'copy_from_label'];
     }
 
-    /**
-     * Construct a new picker but don't initialize anything - wait until `connectCallback()` to
-     * do that since we depend on DOM attributes which are not available at construction.
-     */
     constructor() {
         super();
         this.attachShadow({mode: 'open'});
@@ -75,20 +71,17 @@ class DateTimePicker extends HTMLElement {
         this.components.hidden_input.type = "hidden";
     }
 
+    /**
+     * Perform initialization steps that require access to element attributes which are only
+     * available at the time of insertion.
+     */
     connectedCallback() {
         const initial_iso8601 = this.getAttribute('value') ||
             Temporal.Now.zonedDateTimeISO().round('second').toString({timeZoneName:'never'});
         this.set_value(initial_iso8601);
-        this.components.hidden_input.name = this.getAttribute("name");
-        /* The hidden input field must be inserted outside the shadow DOM, an operation which is
-        only possible after the element has been fully inserted into the regular DOM */
-        this.append(this.components.hidden_input);
 
-        /* Special handlers for the copy_from attribute */
-        const old_copy_from_button = this.shadowRoot.querySelector('button[name="copy_from"]');
-        if(old_copy_from_button) {
-            this.components.container.removeChild(old_copy_from_button);
-        }
+        this.components.hidden_input.name = this.getAttribute("name");
+        this.append(this.components.hidden_input);
 
         const copy_from = this.getAttribute("copy_from");
         if(copy_from) {
