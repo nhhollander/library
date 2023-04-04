@@ -138,7 +138,6 @@ def templateWrapper(function: TemplateFunc[P]) -> Callable[P, GeneralResponse]:
             return raw_response
 
         template_name, params, status = expand(raw_response)
-        # Strip away typing information to populate the following special fields
         db = server.get_db_internal()
         params = cast(AdditionalTemplateFields, params)  # Strip away any special typing information
         params['query_time'] = timer.time_formatted()

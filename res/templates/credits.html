@@ -38,7 +38,9 @@
             <fieldset>
                 <legend>Third Party Components</legend>
                 {% for component in credits.third_party %}
-                    <a rel="nofollow" href="{{component.url}}">{{component.name}}</a> by {{component.author}} ({{component.license}})
+                    <div>
+                        <a rel="nofollow" href="{{component.url}}">{{component.name}}</a> by {{component.author}} ({{component.license}})
+                    </div>
                 {% endfor %}
             </fieldset>
         </div>

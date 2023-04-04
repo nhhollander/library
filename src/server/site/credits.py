@@ -13,8 +13,8 @@ def credits():
     the output based on the license specifics, such as OSI/FSF approval and link to more info.
     """
 
-    file_path = Path(__file__).parent.absolute()
-    credits_file = Path(file_path, '../../credits.json')
+    file_path = Path(__file__).parent.parent.parent.parent.absolute()
+    credits_file = Path(file_path, 'credits.json')
     c = json.load(credits_file.open("r"))
 
     return 'credits.html', {"credits": c}

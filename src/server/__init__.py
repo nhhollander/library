@@ -3,8 +3,14 @@ from flask import Flask
 from database import Database
 from .api import api
 from .site import site
+from pathlib import Path
 
-app = Flask(__name__)
+root = Path(__file__).parent.parent.parent
+# TODO: Remove `str()` once https://github.com/pallets/flask/pull/4921 is available in pip
+template_dir = str(Path(root, "res/templates").resolve())
+static_dir = Path(root, "res/static").resolve()
+
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 __db = Database("/local.db")
 
 app.register_blueprint(api)
