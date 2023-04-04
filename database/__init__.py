@@ -222,7 +222,7 @@ class Database:
             raise TagDoesNotExistException(tag)
         new_tag = self.__session.query(Tag).filter(Tag.name == new_tag_name).one_or_none()
         if new_tag:
-            new_tag.post_count += old_tag.post_count
+            new_tag.count += old_tag.count
         affected_entries = self.__session \
             .query(Entry).filter(func.has_tag(Entry.tags_raw, old_tag.id)).all()
         for entry in affected_entries:
@@ -262,7 +262,7 @@ class Database:
         tag_map: dict[int, Tag] = {}
         for tag in self.__session.query(Tag).all():
             tag_map[tag.id] = tag
-            tag.post_count = 0
+            tag.count = 0
         print(f"Sorted tag objects in {timer.time_formatted()}, starting count")
         timer.lap()
         for entry_id, raw_tags in self.__session.query(Entry.id, Entry.tags_raw).all():
@@ -270,7 +270,7 @@ class Database:
                 if id not in tag_map:
                     print(f"Entry {entry_id} contains invalid tag {id}")
                 else:
-                    tag_map[id].post_count += 1
+                    tag_map[id].count += 1
         print(f"Counted tags in {timer.time_formatted(True)} (total {timer.time_formatted()}), "
               "saving changes")
         timer.lap()

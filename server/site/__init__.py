@@ -63,6 +63,9 @@ def search(db: Database, args: SearchArgs):
         message = f"Uncaught database exception {type(e).__name__}"
         render_params['messages'].append(Err(message))
 
+    if len(render_params['entries']) == 0:
+        render_params['messages'].append(Err("No results"))
+
     return 'search.html', render_params
 
 

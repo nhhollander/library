@@ -1,111 +1,95 @@
-class TagPicker extends HTMLElement {
+class TagPicker extends HTMLInputElement {
 
-    static get observedAttributes() {
-        return ['value', 'name'];
-    }
+    tags = [];
+    tag_names = [];
+    selection_index = -1;
+    max_selection_index = -1;
+    previous_picker_value = null;
 
     constructor() {
         super();
-        this.attachShadow({mode: 'open'});
 
-        this.attachStyle("/static/style.css");
-        this.attachStyle("/static/style/tag-picker.css");
+        this.list_elem = document.createElement("div");
+        this.list_elem.className = "tag-picker-list";
+        this.hide_list();
 
-        this.tags = [];
-        this.selection_index = -1;
-        this.max_selection_index = -1;
-        this.previous_picker_value = null;
+        this.setAttribute("autocomplete", "off");
 
-        this.components = {};
-        this.components.picker = document.createElement("input");
-        this.components.tag_list = document.createElement("div");
-        this.components.hidden_input = document.createElement("input");
-        this.shadowRoot.append(this.components.picker);
-        this.shadowRoot.append(this.components.tag_list);
-
-        this.components.picker.addEventListener("keyup", this.update.bind(this));
-        this.components.picker.addEventListener("keydown", this.handle_arrow_keys.bind(this));
-        this.components.picker.addEventListener("keydown", this.handle_enter.bind(this));
-        this.components.picker.addEventListener("focusout", this.hide_list.bind(this));
-        this.components.picker.addEventListener("change", this.update_value.bind(this));
-        this.components.picker.setAttribute("list", "tag-picker-list");
-
-        this.components.tag_list.className = "tag_list";
-        this.components.tag_list.style.display = "none";
+        this.addEventListener("keyup", this.update.bind(this));
+        this.addEventListener("keydown", this.handle_arrow_keys.bind(this));
+        this.addEventListener("keydown", this.handle_enter.bind(this));
+        this.addEventListener("focusout", this.hide_list.bind(this));
 
         this.update_tag_list();
     }
 
-    connectedCallback() {
-        this.components.hidden_input.name = this.getAttribute("name");
-        this.components.hidden_input.value = this.getAttribute("value");
-        this.append(this.components.hidden_input);
-    }
-
-    attachStyle(href) {
-        const style = document.createElement("link");
-        style.rel = "stylesheet";
-        style.href = href;
-        this.shadowRoot.append(style);
-    }
-
     async update_tag_list() {
         const list = await fetch("/api/tags/list");
-        const tag_result = await list.json();
-        if(tag_result['result'] == "success") {
-            this.tags = tag_result['detail'];
+        const result = await list.json();
+        if(result['result'] == "success") {
+            this.tags = result['detail'];
+            this.tag_names = this.tags.map((tag_object) => tag_object.name);
+            console.log(this.tag_names);
             console.log(this.tags);
+        } else {
+            console.error("Failed to update tag list", result);
         }
     }
 
+    connectedCallback() {
+        this.after(this.list_elem);
+    }
+
+    hide_list() { this.list_elem.style.display = "none"; }
+    show_list() { this.list_elem.style.display = "block"; }
+
     update() {
-        if(this.components.picker.value == this.previous_picker_value) {
+        if(this.previous_picker_value == this.value) {
             return;
         }
-        
-        this.previous_picker_value = this.components.picker.value;
+
+        this.previous_picker_value = this.value;
         this.selection_index = -1;
         this.max_selection_index = -1;
 
-        const tokenized = new TokenizedString(this.components.picker.value, this.components.picker.selectionStart);
+        const tokenized = new TokenizedString(this.value, this.selectionStart);
         const partial_tag = tokenized.active_token();
 
-        this.components.tag_list.innerHTML = "";
-        let index = 0;
+        this.list_elem.innerHTML = "";
         this.tags.forEach((tag) => {
             if(tag.name.includes(partial_tag) && !tokenized.tokens.includes(tag.name)) {
                 const elem = document.createElement("div");
-                elem.className = "tag-suggestion";
-                elem.innerText = tag.name;
+                elem.className = "tag";
                 elem.setAttribute("tagName", tag.name);
-                elem.setAttribute("index", index);
                 elem.addEventListener("mousedown", (e) => {
-                    this.suggestion_selected(parseInt(e.target.getAttribute("index")))
+                    this.apply_suggestion(e.target.getAttribute("tagName"))
                 });
-                this.components.tag_list.append(elem);
+                this.list_elem.append(elem);
                 this.max_selection_index += 1;
-                index += 1;
-            }
-        });
 
+                const name = document.createElement("span");
+                name.className = "tag-name";
+                name.innerText = tag.name;
+                elem.appendChild(name);
+
+                const count = document.createElement("span");
+                count.className = "tag-count";
+                count.innerText = tag.count;
+                elem.appendChild(count);
+
+            }
+        })
+        console.log(this.max_selection_index);
         this.max_selection_index >= 0 ? this.show_list() : this.hide_list();
     }
 
-    suggestion_selected(index) {
-        if(index < 0 || index > this.components.max_selection_index) {
-            console.warn(`Invalid suggestion selection index ${index}`);
-            return;
-        }
-        console.log(this.components.tag_list.children, index);
-        const tokenized = new TokenizedString(this.components.picker.value, this.components.picker.selectionStart);
-        const new_value = this.components.tag_list.children[index].getAttribute("tagName");
-        tokenized.replace_active_token(new_value);
-        this.components.picker.value = tokenized.toString();
-        this.components.hidden_input.value = tokenized.toString();
+    apply_suggestion(tag) {
+        const tokenized = new TokenizedString(this.value, this.selectionStart);
+        tokenized.replace_active_token(tag);
+        this.value = tokenized.toString();
     }
 
     handle_arrow_keys(event) {
-        // Up and down arrows normally move the cursor to the beginning/end (or up/down lines)
         if(["ArrowDown", "ArrowUp"].includes(event.key)) event.preventDefault();
 
         if(event.key == "ArrowDown" && this.selection_index < this.max_selection_index) {
@@ -115,28 +99,20 @@ class TagPicker extends HTMLElement {
         } else {
             return;
         }
-        this.components.tag_list.querySelectorAll('.selected').forEach((e) => {
+        this.list_elem.querySelectorAll('.selected').forEach((e) => {
             e.classList.remove('selected');
-        })
-        this.components.tag_list.children[this.selection_index].classList.add("selected");
+        });
+        const selected_element = this.list_elem.children[this.selection_index];
+        selected_element.classList.add("selected");
+        selected_element.scrollIntoView();
     }
 
     handle_enter(event) {
-        if(event.key == "Enter") {
-            this.suggestion_selected(this.selection_index);
+        if(event.key == "Enter" && this.selection_index >= 0) {
+            this.apply_suggestion(
+                this.list_elem.children[this.selection_index].getAttribute("tagName"));
+            event.preventDefault();
         }
-    }
-
-    update_value() {
-        this.components.hidden_input.value = this.components.picker.value;
-    }
-
-    hide_list() {
-        this.components.tag_list.style.display = "none";
-    }
-
-    show_list() {
-        this.components.tag_list.style.display = "block";
     }
 
 }
@@ -171,4 +147,9 @@ class TokenizedString {
 
 }
 
-customElements.define('tag-picker', TagPicker);
+// On-load initializations
+customElements.define('tag-picker2', TagPicker, {extends: 'input'});
+const picker_style = document.createElement("link");
+picker_style.rel = "stylesheet";
+picker_style.href = "/static/style/tag-picker.css";
+document.head.appendChild(picker_style);

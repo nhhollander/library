@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>CSS Theme Tester</title>
+        <script>
+            const pseudo_classes = ['hover', 'focus-visible', 'disabled', 'invalid'];
+            function apply_style(style) {
+                const elem = document.createElement("style");
+                elem.innerHTML = style;
+                document.head.append(elem);
+            }
+            async function load_style(name) {
+                let raw_style = await (await fetch(name)).text();
+                apply_style(raw_style);
+                const pattern = new RegExp(`:(?=(${pseudo_classes.join('|')}))`, "g");
+                apply_style(raw_style.replace(pattern, "."));
+            }
+            load_style("style.css");
+        </script>
+    </head>
+    <body>
+        <fieldset>
+            <legend>Buttons</legend>
+            <button>Normal</button>
+            <button class="hover">Hover</button>
+            <button class="focus-visible">Focus-Visible</button>
+            <button class="disabled">Disabled</button>
+        </fieldset>
+
+        <fieldset>
+            <legend>Select</legend>
+            <select>
+                <option>Normal</option>
+                <option>The quick</option>
+                <option>brown fox</option>
+                <option>jumps over</option>
+                <option>the lazy dog</option>
+            </select>
+            <select class="hover">
+                <option>Hover</option>
+                <option>The quick</option>
+                <option>brown fox</option>
+                <option>jumps over</option>
+                <option>the lazy dog</option>
+            </select>
+            <select class="focus-visible">
+                <option>Focus-Visible</option>
+                <option>The quick</option>
+                <option>brown fox</option>
+                <option>jumps over</option>
+                <option>the lazy dog</option>
+            </select>
+            <select class="disabled">
+                <option>Disabled</option>
+                <option>The quick</option>
+                <option>brown fox</option>
+                <option>jumps over</option>
+                <option>the lazy dog</option>
+            </select>
+        </fieldset>
+
+        <fieldset>
+            <legend>Text Inputs</legend>
+            <input value="Normal"/>
+            <input class="focus-visible" value="Focus Visible"/>
+            <input class="disabled" value="Disabled"/>
+            <input class="valid" value="Valid"/>
+            <input class="invalid" value="Invalid"/>
+        </fieldset>
+
+        <fieldset>
+            <legend>Text Area</legend>
+            <textarea>Normal</textarea>
+            <textarea class="focus-visible">Focus-Visible</textarea>
+            <textarea class="disabled">Disabled</textarea>
+        </fieldset>
+
+        <fieldset>
+            <legend>Hyperlinks</legend>
+            <a href="#">Normal</a>
+            <a href="#" class="visited">Visited</a>
+        </fieldset>
+
+        <fieldset>
+            <legend>Input Chain</legend>
+            <form class="input-chain-horizontal"><input/><button>Button</button><input type="submit" value="Submit"/></form>
+            <form class="input-chain-vertical"><input/><button>Button</button><input type="submit" value="Submit"/></form>
+        </fieldset>
+    </body>
+</html>

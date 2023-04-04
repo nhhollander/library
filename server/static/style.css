@@ -10,9 +10,12 @@ html {
     --fg-primary: black;
     --bg-primary: white;
     --bg-secondary: #FAFAFA;
+    --bg-tertiary: white;
     --bg-secondary-hover: #E9E9E9;
     --border-primary: #ABABAB;
+    --border-secondary: #aec4ff;
     --shadow-primary: rgba(0, 0, 0, .15);
+    --disabled-brightness-factor: 50%;
 
     height: 100%;
     color: var(--fg-primary);
@@ -26,10 +29,19 @@ html {
         --fg-secondary: #D0D0D0;
         --bg-primary: #202020;
         --bg-secondary: #303030;
+        --bg-tertiary: #151515;
         --bg-secondary-hover: #404040;
         --border-primary: #505050;
+        --border-secondary: #1c6bff;
+        --success-primary: #008b00;
+        --error-primary: #a50000;
         --shadow-primary: rgba(0, 0, 0, .5);
+        --disabled-brightness-factor: 70%;
     }
+}
+
+:disabled {
+    filter: invert() brightness(var(--disabled-brightness-factor)) invert();
 }
 
 fieldset {
@@ -37,24 +49,79 @@ fieldset {
     border-radius: 1mm;
 }
 
-input, textarea {
-    color: var(--fg-primary);
-    background-color: var(--bg-primary);
-}
 button,
 select,
 input[type="submit"] {
     color: var(--fg-primary);
     background-color: var(--bg-secondary);
     cursor: pointer;
+    border: 1px solid var(--border-primary);
+    border-radius: 1mm;
+    padding: 1mm 2mm 1mm 2mm;
 }
-button:hover,
-select:hover,
-input[type="submit"]:hover {
+button:hover:not(:disabled),
+select:hover:not(:disabled),
+input[type="submit"]:hover:not(:disabled) {
     background-color: var(--bg-secondary-hover);
 }
+button:focus-visible,
+select:focus-visible,
+input[type="submit"]:focus-visible {
+    outline: 1px solid var(--border-secondary);
+}
+
+input, textarea {
+    color: var(--fg-primary);
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 1mm;
+    padding: 1mm;
+}
+input:focus-visible,
+textarea:focus-visible {
+    outline: 1px solid var(--border-secondary);
+}
+/* input:valid,
+textarea:valid {
+    outline: 1px solid var(--success-primary);
+} */
+input:invalid,
+textarea:invalid {
+    outline: 1px solid var(--error-primary);
+}
+
 a {
     color: var(--fg-secondary);
+}
+
+.input-chain-horizontal>* {
+    border-radius: 0;
+}
+.input-chain-horizontal>:not(:last-child) {
+    border-right: none;
+}
+.input-chain-horizontal>:first-child {
+    border-radius: 1mm 0 0 1mm;
+}
+.input-chain-horizontal>:last-child {
+    border-radius: 0 1mm 1mm 0;
+}
+
+.input-chain-vertical {
+    display: flex;
+    flex-direction: column;
+}
+.input-chain-vertical>* {
+    border-radius: 0;
+}
+.input-chain-vertical>:not(:last-child) {
+    border-bottom: none;
+}
+.input-chain-vertical>:first-child {
+    border-radius: 1mm 1mm 0 0;
+}
+.input-chain-vertical>:last-child {
+    border-radius: 0 0 1mm 1mm;
 }
 
 /****************************/
