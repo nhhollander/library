@@ -1,6 +1,5 @@
-from flask import Blueprint
 from database import Database
-
+from flask import Blueprint
 from server.helpers import exceptionWrapper, success, withDatabase
 
 admin_api = Blueprint("admin_api", __name__, url_prefix="/admin")

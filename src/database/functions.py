@@ -1,6 +1,6 @@
-from sqlite3 import Connection
-from typing import Any
 import numpy as np
+from typing import Any
+from sqlite3 import Connection
 
 
 def register(dbapi: Connection, _: Any):

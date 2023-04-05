@@ -1,7 +1,7 @@
-import time
-from typing import TypeAlias, Literal
 from .types import SearchParameters
 from dateutil import parser
+from typing import TypeAlias, Literal
+import time
 
 
 def parse_search(query: str) -> tuple[SearchParameters, list[str]]:

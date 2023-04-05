@@ -1,20 +1,17 @@
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.orm.session import object_session
-
-from typing import cast, Any
-
-from database.types import EntryUpdateParams
-
 from .base import Base
-from .tag import Tag
 from .db_utils import decode_tags, get_tag_ids, get_tag_id, encode_tags
+from .tag import Tag
+from calendar import timegm
+from database.types import EntryUpdateParams
+from datetime import datetime, timezone, timedelta
+from dateutil import parser
 from magic import Magic
 from pathlib import Path
-import config
-from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm.session import object_session
+from typing import cast, Any
 from util import mime
-from dateutil import parser
-from calendar import timegm
+import config
 import traceback
 
 

@@ -1,5 +1,5 @@
-from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class Tag(Base):

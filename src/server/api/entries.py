@@ -1,17 +1,15 @@
-from flask import Blueprint, send_file  # type: ignore
-from typing_extensions import TypedDict
+from database import Database
 from database.entry import EntryUpdateParams
 from database.exceptions import DatabaseException
-
+from flask import Blueprint, send_file  # type: ignore
+from pathlib import Path
 from server.helpers import RequestError, exceptionWrapper, success, args, withDatabase
-import xdg.BaseDirectory  # type: ignore
+from typing_extensions import TypedDict
+from util import mime as mime_util
+import config
 import hashlib
 import os
-import config
-from database import Database
-from util import mime as mime_util
-
-from pathlib import Path
+import xdg.BaseDirectory  # type: ignore
 
 entry_api = Blueprint('entry_api', __name__, url_prefix='/entries')
 

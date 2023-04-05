@@ -1,12 +1,9 @@
-from flask import Blueprint
-from typing_extensions import TypedDict, NotRequired
-
-from server.helpers import exceptionWrapper, success, args, RequestError, withDatabase
-
 from database import Database
 from database.exceptions import TagExistsException, TagDoesNotExistException
-
+from flask import Blueprint
+from server.helpers import exceptionWrapper, success, args, RequestError, withDatabase
 from typing import TypeVar
+from typing_extensions import TypedDict, NotRequired
 
 tag_api = Blueprint('tag_api', __name__, url_prefix='/tags')
 

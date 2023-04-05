@@ -1,8 +1,7 @@
-from flask import Flask
-
-from database import Database
 from .api import api
 from .site import site
+from database import Database
+from flask import Flask
 from pathlib import Path
 
 root = Path(__file__).parent.parent.parent

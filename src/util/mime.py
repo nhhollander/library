@@ -1,8 +1,8 @@
-from xdg import IconTheme  # type: ignore
-import re
-import config
-from typing import cast
 from threading import Lock
+from typing import cast
+from xdg import IconTheme  # type: ignore
+import config
+import re
 
 
 def __read_icon_file(path: str) -> dict[str, str]:

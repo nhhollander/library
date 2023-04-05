@@ -1,9 +1,9 @@
 from database import Database
 from database.exceptions import TagDoesNotExistException, TagExistsException
 from database.tag import Tag
-from typing_extensions import TypedDict, NotRequired
 from server.helpers import StandardRenderParams, args, exceptionWrapper, templateWrapper, Err
 from server.helpers import withDatabase, Message, Success
+from typing_extensions import TypedDict, NotRequired
 
 
 class TagActions(TypedDict):

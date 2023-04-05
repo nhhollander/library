@@ -1,19 +1,16 @@
-from sqlalchemy import Engine, create_engine, func, event
-from sqlalchemy.orm import scoped_session, sessionmaker, Session
-from sqlalchemy.exc import NoResultFound
-
-from typing import ParamSpec, TypeVar
-from database.dbstat import DBStat
-
-from database.exceptions import InvalidTagException, TagDoesNotExistException, TagExistsException
-from util.timer import Timer
-
 from .base import Base
-from .tag import Tag
-from .entry import Entry
-from .types import SearchParameters
 from .db_utils import decode_tags, get_tag_ids, encode_tags, get_tag_ids_multiple
+from .entry import Entry
 from .functions import register
+from .tag import Tag
+from .types import SearchParameters
+from database.dbstat import DBStat
+from database.exceptions import InvalidTagException, TagDoesNotExistException, TagExistsException
+from sqlalchemy import Engine, create_engine, func, event
+from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import scoped_session, sessionmaker, Session
+from typing import ParamSpec, TypeVar
+from util.timer import Timer
 
 # Register the custom function manager
 event.listen(Engine, "connect", register)

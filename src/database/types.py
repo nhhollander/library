@@ -1,5 +1,5 @@
-from typing_extensions import TypedDict, NotRequired
 from datetime import datetime
+from typing_extensions import TypedDict, NotRequired
 
 
 class SearchParameters(TypedDict):

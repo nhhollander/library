@@ -3,11 +3,10 @@
 # any specific component of the index. Type imports are kind of weird to avoid issues with circular
 # dependencies
 
-from sqlalchemy.orm import Session
-import numpy as np
-from typing import List
-
 from database.exceptions import InvalidTagException
+from sqlalchemy.orm import Session
+from typing import List
+import numpy as np
 
 
 def get_tag_id(session: Session, tag: str):

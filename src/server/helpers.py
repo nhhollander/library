@@ -1,17 +1,17 @@
+from database import Database
+from flask import jsonify, request, Response, render_template
+from functools import wraps
+from markdown2 import Markdown  # type: ignore
 from typing import Type, Literal, Callable, TypeVar, cast, ParamSpec, Concatenate, Any
 from typing_extensions import TypedDict, NotRequired
-from functools import wraps
-from flask import jsonify, request, Response, render_template
+from util import formatting
 from util.timer import Timer
 from util.validator import ValidationException, Validator
+from werkzeug.wrappers import Response as WerkzeugResponse
 import dateutil.parser
 import json
-import traceback
-from database import Database
 import server
-from util import formatting
-from markdown2 import Markdown  # type: ignore
-from werkzeug.wrappers import Response as WerkzeugResponse
+import traceback
 
 validator = Validator(raise_exception=True)
 markdowner = Markdown()

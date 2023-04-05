@@ -1,8 +1,7 @@
-from typing import Any, cast, get_args
-from types import UnionType
-from typing_extensions import TypedDict
-
 from .plural import plural
+from types import UnionType
+from typing import Any, cast, get_args
+from typing_extensions import TypedDict
 
 
 class ValidationException(Exception):

@@ -1,7 +1,6 @@
 from flask import Blueprint
-from typing_extensions import TypedDict
-
 from server.helpers import exceptionWrapper, args
+from typing_extensions import TypedDict
 
 search_api = Blueprint('search_api', __name__, url_prefix='/search')
 
