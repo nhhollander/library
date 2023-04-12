@@ -32,11 +32,7 @@ def search(db: Database, args: SearchArgs):
         render_params['messages'].extend(Warning(w) for w in warnings)
         render_params['entries'] = db.search(params)
     except InvalidTagException as e:
-        if len(e.tags) > 1:
-            message = f"Query contains invalid tags: {', '.join(e.tags)}"
-        else:
-            message = f"Query contains an invalid tag: {e.tags[0]}"
-        render_params['messages'].append(Err(message))
+        render_params['messages'].append(Err(e.message))
     except DatabaseException as e:
         message = f"Uncaught database exception {type(e).__name__}"
         render_params['messages'].append(Err(message))

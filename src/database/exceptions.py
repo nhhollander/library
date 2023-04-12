@@ -22,8 +22,15 @@ class TagDoesNotExistException(DatabaseException):
 
 
 class InvalidTagException(DatabaseException):
-
+    """
+    Represents one or more tags which have been requested but do not exist in the database.
+    """
     def __init__(self, tags: list[str]):
-        self.message = f"Invalid tag{'s' if len(tags) > 1 else ''}: {tags}"
+        if len(tags) > 1:
+            self.message = f"Invalid tags: {tags}"
+        elif len(tags) == 1:
+            self.message = f"Invalid tag: {tags[0]}"
+        else:
+            raise ValueError("Invalid tag exception raised with no invalid tags specified")
         self.tags = tags
         self.args = (self.message, tags)

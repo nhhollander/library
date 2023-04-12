@@ -46,7 +46,7 @@
             <fieldset>
                 <legend>Tags</legend>
                 {% for tag in entry.tags %}
-                    <a href="/search?q={{tag}}">{{tag}}</a>
+                    <a href="/search?q={{tag.name}}">{{tag.name}}</a>
                 {% endfor %}
             </fieldset>
             <fieldset>

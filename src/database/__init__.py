@@ -1,14 +1,14 @@
 from .base import Base
-from .db_utils import decode_tags, get_tag_ids, encode_tags, get_tag_ids_multiple
 from .entry import Entry
 from .functions import register
-from .tag import Tag
+from .tag import Tag, get_tag_ids_multiple, tag_exists, get_tag
 from .types import SearchParameters
 from database.dbstat import DBStat
-from database.exceptions import InvalidTagException, TagDoesNotExistException, TagExistsException
+from database.exceptions import TagDoesNotExistException, TagExistsException
 from sqlalchemy import Engine, create_engine, func, event
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
+from sqlalchemy.sql import select
 from typing import ParamSpec, TypeVar
 from util.timer import Timer
 
@@ -48,20 +48,11 @@ class Database:
         self.__scoped_session = scoped_session(sessionmaker(bind=self.__engine))
 
         Base.metadata.create_all(self.__engine)
-
-        self.commit()
+        self.__session.commit()
 
     # =================== #
     #  General Functions  #
     # =================== #
-
-    def commit(self):
-        """Write changes to the database."""
-        self.__session.commit()
-
-    def rollback(self):
-        """Abandon all pending changes."""
-        self.__session.rollback()
 
     def release(self):
         """
@@ -113,20 +104,6 @@ class Database:
     #  Query Functions  #
     # ================= #
 
-    def tag_query(self, tags: list[str], forbidden: list[str] = []):
-        """
-        Query the database for Entries which match all required tags, and optionally possess none
-        of the forbidden tags.
-
-        :param tags: List of tags to search for
-        :param forbidden: List of tags to exclude from results
-        :returns: A list of matching entries plus information on invalid tags
-        """
-        tag_ids, forbidden_ids = get_tag_ids_multiple(self.__session, [tags, forbidden])
-        filter = func.check_tags(Entry.tags_raw, encode_tags(tag_ids), encode_tags(forbidden_ids))
-        result = self.__session.query(Entry).filter(filter).all()
-        return result
-
     def search(self, params: SearchParameters):
         """
         Perform a search of the database.
@@ -136,9 +113,7 @@ class Database:
         tag_str = params.get('tags', [])
         f_tag_str = params.get('f_tags', [])
         tag_ids, forbidden_ids = get_tag_ids_multiple(self.__session, [tag_str, f_tag_str])
-        tags_enc = encode_tags(tag_ids)
-        f_tags_enc = encode_tags(forbidden_ids)
-        query = query.filter(func.check_tags(Entry.tags_raw, tags_enc, f_tags_enc))
+        query = query.filter(func.check_tags(Entry.tag_ids, tag_ids, forbidden_ids))
 
         # Time ranges
         if 'since' in params:
@@ -172,26 +147,7 @@ class Database:
 
     def get_all_tags(self):
         """Retrieve a list of all tags known to the database."""
-        return self.__session.query(Tag).all()
-
-    def tag_exists(self, tag: str):
-        return self.__session.query(Tag).filter(Tag.name == tag).count() > 0
-
-    def check_tags(self, tags: list[str]) -> list[str]:
-        """
-        Make sure all tags exist returning a list of invalid tags.
-
-        Note: Because this method returns a list of invalid tags, `if check_tags(['invalid']):` will
-        evaluate as True.
-
-        :param tags: List of tags to verify
-        :return: A list of invalid tags
-        """
-        try:
-            get_tag_ids(self.__session, tags)
-            return []
-        except InvalidTagException as e:
-            return e.tags
+        return (x.tuple()[0] for x in self.__session.execute(select(Tag)).all())
 
     def create_tag(self, tag: str):
         """
@@ -199,11 +155,11 @@ class Database:
 
         :param tag: The tag name to create.
         """
-        if self.tag_exists(tag):
+        if tag_exists(self.__session, tag):
             raise TagExistsException(tag)
         newTag = Tag(name=tag)
-        self.__session.add(newTag)
-        self.commit()
+        with self.__session.begin_nested():
+            self.__session.add(newTag)
 
     def delete_tag(self, tag: str, new_tag_name: str | None = None):
         """
@@ -214,21 +170,26 @@ class Database:
         :param new_tag: The optional tag to replace all instance of `tag` with
         """
         try:
-            old_tag = self.__session.query(Tag).filter(Tag.name == tag).one()
+            old_tag = get_tag(self.__session, tag)
         except NoResultFound:
             raise TagDoesNotExistException(tag)
-        new_tag = self.__session.query(Tag).filter(Tag.name == new_tag_name).one_or_none()
-        if new_tag:
-            new_tag.count += old_tag.count
-        affected_entries = self.__session \
-            .query(Entry).filter(func.has_tag(Entry.tags_raw, old_tag.id)).all()
-        for entry in affected_entries:
+        new_tag = None
+        if new_tag_name:
+            try:
+                new_tag = get_tag(self.__session, new_tag_name)
+            except NoResultFound:
+                raise TagDoesNotExistException(new_tag_name)
+        with self.__session.begin_nested():
             if new_tag:
-                entry.replace_tag(old_tag.id, new_tag.id)
-            else:
-                entry.remove_tag(old_tag.id)
-        self.__session.delete(old_tag)
-        self.commit()
+                new_tag.count += old_tag.count
+            entry_query = select(Entry).where(func.has_tag(Entry.tag_ids, old_tag.id))
+            affected_entries = self.__session.execute(entry_query).all()
+            for entry in (x.tuple()[0] for x in affected_entries):
+                if new_tag:
+                    entry.tags.replace(old_tag, new_tag)
+                else:
+                    entry.tags.remove(old_tag)
+            self.__session.delete(old_tag)
 
     def rename_tag(self, tag: str, new_tag: str):
         """
@@ -241,10 +202,10 @@ class Database:
             tag_object = self.__session.query(Tag).where(Tag.name == tag).one()
         except NoResultFound:
             raise TagDoesNotExistException(tag)
-        if self.tag_exists(new_tag):
+        if tag_exists(self.__session, new_tag):
             raise TagExistsException(new_tag)
-        tag_object.name = new_tag
-        self.commit()
+        with self.__session.begin_nested():
+            tag_object.name = new_tag
 
     def update_tag_counts(self):
         """
@@ -257,22 +218,20 @@ class Database:
         timer = Timer()
         print("Starting tag update")
         tag_map: dict[int, Tag] = {}
-        for tag in self.__session.query(Tag).all():
+        for tag in (x.tuple()[0] for x in self.__session.execute(select(Tag)).all()):
             tag_map[tag.id] = tag
             tag.count = 0
         print(f"Sorted tag objects in {timer.time_formatted()}, starting count")
         timer.lap()
-        for entry_id, raw_tags in self.__session.query(Entry.id, Entry.tags_raw).all():
-            for id in decode_tags(raw_tags):
-                if id not in tag_map:
-                    print(f"Entry {entry_id} contains invalid tag {id}")
-                else:
-                    tag_map[id].count += 1
-        print(f"Counted tags in {timer.time_formatted(True)} (total {timer.time_formatted()}), "
-              "saving changes")
-        timer.lap()
-        self.__session.commit()
-        print(f"Changes saved in {timer.time_formatted(True)} (total {timer.time_formatted()})")
+        entry_info = self.__session.execute(select(Entry.id, Entry.tag_ids)).all()
+        with self.__session.begin_nested():
+            for entry_id, tag_ids in (x.tuple() for x in entry_info):
+                for id in tag_ids:
+                    if id not in tag_map:
+                        print(f"Entry {entry_id} contains invalid tag {id}")
+                    else:
+                        tag_map[id].count += 1
+        print(f"Counted tags in {timer.time_formatted(True)} (total {timer.time_formatted()})")
         return len(tag_map), timer.get_time()
 
     # ================== #

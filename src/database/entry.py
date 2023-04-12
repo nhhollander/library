@@ -1,6 +1,5 @@
 from .base import Base
-from .db_utils import decode_tags, get_tag_ids, get_tag_id, encode_tags
-from .tag import Tag
+from .tag import TagIDListDecorator, TagList, Tag
 from calendar import timegm
 from database.types import EntryUpdateParams
 from datetime import datetime, timezone, timedelta
@@ -9,10 +8,12 @@ from magic import Magic
 from pathlib import Path
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm.session import object_session
-from typing import cast, Any
+from sqlalchemy.orm.attributes import flag_modified
+from typing import Any, cast
 from util import mime
 import config
 import traceback
+from util.repr import repr_helper
 
 
 __shared_parser = parser.parser()
@@ -23,7 +24,7 @@ class Entry(Base):
 
     item_name: Mapped[str | None] = mapped_column(nullable=True)
     __storage_id: Mapped[str | None] = mapped_column(nullable=True, name='storage_id')
-    tags_raw: Mapped[bytes] = mapped_column(default=b'')
+    tag_ids: Mapped[list[int]] = mapped_column(TagIDListDecorator, default=b'', name='tags_raw')
     description:  Mapped[str | None] = mapped_column(nullable=True)
     transcription: Mapped[str | None] = mapped_column(nullable=True)
     date_created_raw: Mapped[int] = mapped_column(name='date_created')
@@ -109,35 +110,18 @@ class Entry(Base):
         icon = mime.find_icon_name(self.mime_type)
         if not icon:
             return None
-        nested = self.__session.begin_nested()
-        self.__mime_icon = icon
-        nested.commit()
+        with self.__session.begin_nested():
+            self.__mime_icon = icon
         return self.__mime_icon
-
-    @property
-    def tag_ids(self):
-        """Get a list of numeric tag IDs associated with this entry."""
-        return decode_tags(self.tags_raw)
 
     @property
     def tags(self):
         """Get the tags associated with this entity as strings."""
-        tags = self.__session.query(Tag).filter(Tag.id.in_(self.tag_ids)).all()
-        return [tag.name for tag in tags]
+        return TagList(self.tag_ids, self.__session, lambda: flag_modified(self, 'tag_ids'))
 
     @tags.setter
-    def tags(self, tags: list[str] | list[int]):
-        """Update the tags associated with this entity."""
-        if len(tags) == 0:
-            self.tags_raw = b''
-            return
-        tag_ids: list[int]
-        if isinstance(tags[0], str):
-            session = self.__session
-            tag_ids = get_tag_ids(session, cast(list[str], tags))
-        else:
-            tag_ids = cast(list[int], tags)
-        self.tags_raw = encode_tags(tag_ids)
+    def tags(self, value: list[str] | list[Tag]):
+        self.tags.update(cast(list[Tag], value))
 
     @property
     def size(self):
@@ -149,9 +133,8 @@ class Entry(Base):
             return None
         try:
             size = path.stat().st_size
-            nested = self.__session.begin_nested()
-            self.size_raw = size
-            nested.commit()
+            with self.__session.begin_nested():
+                self.size_raw = size
             return size
         except Exception as e:
             traceback.print_exception(e)
@@ -234,40 +217,6 @@ class Entry(Base):
         data = {key: getattr(self, key) for key in keys}
         return data
 
-    def add_tag(self, tag: str | int):
-        """
-        Add a tag to this entry.
-
-        :param tag: Tag name or ID to assign to this entry.
-        """
-        tag_id = get_tag_id(self.__session, tag) if isinstance(tag, str) else tag
-        self.tags = self.tag_ids + [tag_id]
-
-    def remove_tag(self, tag: str | int):
-        """
-        Remove a tag from this entry.
-
-        :param tag: The name or ID of the tag to remove from this entry.
-        """
-        tag_id = get_tag_id(self.__session, tag) if isinstance(tag, str) else tag
-        tags = set(self.tag_ids)
-        tags.remove(tag_id)
-        self.tags = list(tags)
-
-    def replace_tag(self, tag: str | int, new_tag: str | int):
-        """
-        Replace one tag with another on this entity.
-
-        :param tag: The tag to remove
-        :param tag: The tag to replace it with
-        """
-        tag_id = get_tag_id(self.__session, tag) if isinstance(tag, str) else tag
-        new_tag_id = get_tag_id(self.__session, new_tag) if isinstance(new_tag, str) else new_tag
-        tags = set(self.tag_ids)
-        tags.remove(tag_id)
-        tags.add(new_tag_id)
-        self.tags = list(tags)
-
     def update_safe(self, params: EntryUpdateParams):
         """
         Validate and update options. If any of the given parameters are invalid, this method will
@@ -300,10 +249,8 @@ class Entry(Base):
         return Path(config.configuration['dataRoot'], self.storage_id)
 
     def __repr__(self):
-        return "Entry(" \
-            f"id={self.id!r}, item_name={self.item_name!r}, storage_id={self.storage_id!r}, " \
-            f"tags={self.tags!r}, description={self.description!r}, " \
-            f"transcription={self.transcription!r}, date_created={self.date_created!r}, " \
-            f"date_digitized={self.date_digitized!r}, date_indexed={self.date_digitized!r}, " \
-            f"date_modified={self.date_modified!r}, location={self.location!r}" \
-            ")"
+        return repr_helper(self, ['id', 'item_name', '__storage_id', 'tag_ids', 'tags',
+                                  'description', 'transcription', 'date_created_raw',
+                                  '__date_created_tz', 'date_digitized_raw',
+                                  '__date_digitized_tz', 'date_indexed_raw', 'date_modified_raw',
+                                  'location', '__mime_type', '__mime_icon', 'size_raw'])

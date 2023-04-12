@@ -1,4 +1,6 @@
+# cspell:ignore pageno, pagetype, ncell, pgoffset
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from util.repr import repr_helper
 
 
 class Base(DeclarativeBase):
@@ -25,6 +27,5 @@ class DBStat(Base):
     pgsize: Mapped[int] = mapped_column()
 
     def __repr__(self) -> str:
-        keys = ['name', 'path', 'pageno', 'pagetype', 'ncell', 'payload', 'unused', 'mx_payload',
-                'pgoffset', 'pgsize']
-        return f"DBStat({', '.join([f'{key}={getattr(self, key)!r}' for key in keys])})"
+        return repr_helper(self, ['name', 'path', 'pageno', 'pagetype', 'ncell', 'payload',
+                                  'unused', 'mx_payload', 'pgoffset', 'pgsize'])

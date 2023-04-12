@@ -42,7 +42,7 @@
                 Storage ID:
                 <input name="storage_id" value="{{stale_error.storage_id or entry.storage_id}}"/>
                 Tags:
-                <textarea name="tags">{{stale_error.tags or ' '.join(entry.tags)}}</textarea>
+                <textarea name="tags">{{stale_error.tags or entry.tags.joined()}}</textarea>
                 Description:
                 <textarea name="description">{{stale_error.description or entry.description or ''}}</textarea>
                 Transcription:
