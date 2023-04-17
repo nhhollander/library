@@ -45,6 +45,9 @@
             </fieldset>
             <fieldset>
                 <legend>Tags</legend>
+                {% if entry.tags | length == 0 %}
+                    <i>No Tags</i>
+                {% endif %}
                 {% for tag in entry.tags %}
                     <a href="/search?q={{tag.name}}">{{tag.name}}</a>
                 {% endfor %}
@@ -92,6 +95,20 @@
                 <fieldset class="markdown">
                     <legend>Transcription</legend>
                     {{markdown(entry.transcription)|safe}}
+                </fieldset>
+            {% endif %}
+            {% if entry.parent_id %}
+                <fieldset>
+                    <legend>Parent</legend>
+                    <a href="/entry?id={{entry.parent.id}}&q={{query}}">{{entry.parent.item_name}}</a>
+                </fieldset>
+            {% endif %}
+            {% if entry.children | length > 0 %}
+                <fieldset>
+                    <legend>Children</legend>
+                    {% for child in entry.children %}
+                    <a href="/entry?id={{child.id}}&q={{query}}">{{child.item_name}}</a>
+                    {% endfor %}
                 </fieldset>
             {% endif %}
         </div>

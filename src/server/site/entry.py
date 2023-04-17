@@ -121,7 +121,7 @@ def handle_entry_update(db: Database, entry: Entry) -> Message | None:
 
         load('item_name', True)
         load('storage_id', True)
-        load('tags', False, lambda x: list(set(re.sub(r"\s+", " ", x).split(' '))))
+        load('tags', False, parse_tag_str)
         load('description', True)
         load('transcription', True)
         load('date_created', False, parse_date_str)
@@ -165,3 +165,13 @@ def parse_date_str(raw: str):
         return p.parse(raw)
     except Exception as e:
         raise DateParseException(e)
+
+
+def parse_tag_str(raw: str) -> list[str]:
+    """
+    Process the value of a tag field.
+    """
+    x = re.sub(r"\s+", " ", raw)
+    if x == "":
+        return []
+    return x.split(' ')

@@ -181,7 +181,7 @@ class TagList():
         :raises InvalidTagException: If the tags parameter is a list of strings and any of the tags
             can not be resolved to `Tag` objects.
         """
-        if isinstance(tags[0], str):
+        if len(tags) > 0 and isinstance(tags[0], str):
             tags = get_tags(self.__session, cast(list[str], tags))
         tags = cast(list[Tag], tags)
 
@@ -194,6 +194,9 @@ class TagList():
             self.add(tag)
         for tag in deleted_tags:
             self.remove(tag)
+
+    def __repr__(self) -> str:
+        return f"TagList({self.all()})"
 
 
 def get_tag(session: Session, tag: str) -> Tag:
@@ -234,7 +237,7 @@ def tag_exists(session: Session, tag: str) -> bool:
     :param tag: Tag name to check.
     :returns: `True` if the tag exists.
     """
-    return session.execute(select(func.count(Tag)).where(Tag.name == tag)).scalar() == 1
+    return session.execute(select(func.count(Tag.id)).where(Tag.name == tag)).scalar() == 1
 
 
 def get_tag_ids_multiple(session: Session, tags: list[list[str]]) -> list[bytes]:
